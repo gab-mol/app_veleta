@@ -4,7 +4,11 @@
 > Aplicación minimalista para ver la dirección del viento actual y predicciones para las horas siguientes.  
 > (Practicar uso de KivyMD y extracción de datos de API)
 
-Fecha de inicio de desarrollo: 6/12/2023
+## Desarrollo | Actualmente: _Pre-Alfa_
+
+### Historia
+- Fecha de inicio de desarrollo: 6/12/2023
+
 
 ## Información general
 ### Datos meteorológicos

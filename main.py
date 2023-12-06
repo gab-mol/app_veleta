@@ -7,14 +7,20 @@ from kivymd.uix.button import MDFlatButton
 from kivymd.uix.dialog import MDDialog
 from kivy.lang import Builder
 
+import configparser as confp
+import requests
 
+# Configuración #############################################################
+class Config:
+    def __init__(self) -> None:
+        pass
 
+class MeteoDat:
+    def __init__(self) -> None:
+        pass
 
 class ScMg(ScreenManager):
     ...
-
-
-
 
 
 
