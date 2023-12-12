@@ -7,6 +7,7 @@ from kivymd.app import MDApp
 from kivymd.uix.screenmanager import MDScreenManager
 from kivymd.uix.screen import Screen
 from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.floatlayout import MDFloatLayout
 from kivy.properties import StringProperty
 from kivymd.uix.card import MDCard
 from kivymd.uix.button import MDFlatButton
@@ -17,7 +18,7 @@ import os
 import configparser as confp
 import requests
 import pandas as pd
-
+import datetime
 from pprint import pprint
 # Extracción de datos Meteorológicos ########################################
 class Config:
@@ -53,24 +54,42 @@ class MeteoDat:
         '''Entrega todos los datos ordenadas en pandas.Dataframe 
         para su uso en app.'''
         json = self.descar_datos()
+        pprint(list(json.keys()))
         pprint(json["current"])
         print("\nPor horas:\n")
-        prediciones = pd.DataFrame(json["hourly"])
+        predicciones = pd.DataFrame(json["hourly"])
         actual = pd.DataFrame(json["current"])
 
         #return {"actual":actual,"prediciones":prediciones}
-        return actual, prediciones
+        return actual, predicciones
 
 
 
 # KivyMD ####################################################################
-class ScMg(MDBoxLayout):pass
+class ScMg(MDScreenManager):
+    reloj = StringProperty()
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Descarga desde API
+        self.data = MeteoDat().descar_datos()
+
+        # Datos para barra info
+        time = pd.to_datetime(self.data["current"]["time"])
+        time = time - pd.Timedelta(hours=3) # GMT-0 a GMT-3
+        lat = self.data["latitude"]
+        lon = self.data["longitude"]
+        print(type(time), time)
+        self.reloj = time.strftime(f"Condiciones a las %H:%M hs del %d/%m/%y \
+|| lat: {lat}, long: {lon}")
+
 
 class Veleta(Screen):pass
 
 class MainApp(MDApp):
     title= "Veleta"
-
+    Builder.load_file("vista.kv")
     def build(self):
         self.theme_cls.theme_style = "Dark"
         self.theme_cls.primary_palette = "Red"

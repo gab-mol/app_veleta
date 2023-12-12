@@ -1,4 +1,26 @@
 <ScMg>
-    MDLabel:
-        text: "text"
-        color: "Red"
+
+
+    Screen:
+        name: "main"
+        MDBoxLayout:
+            orientation: 'vertical'
+            MDTopAppBar:
+                id: "topb"
+                elevation: 4
+                title: root.reloj
+            MDFloatLayout:
+                MDLabel:
+                    pos_hint: {'center_x': 0.5,'center_y': 0.9}
+                    font_size:25
+                    # text:"[color=#C42D2D<color>]Dirección actual del viento[/color]"
+                    text: "Dirección actual del viento"
+                    markup:True
+                    halign: "center"
+                    # size_hint: 1, 1
+                MDLabel:
+                    pos_hint: {'center_x': 0.5,'center_y': 0.5}
+                    font_size: 35
+                    text: "[b]aquí irá la veleta[/b]"
+                    markup:True
+                    halign: "center"
