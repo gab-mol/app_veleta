@@ -8,7 +8,7 @@ from kivymd.uix.screenmanager import MDScreenManager
 from kivymd.uix.screen import Screen
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.floatlayout import MDFloatLayout
-from kivy.properties import StringProperty
+from kivy.properties import StringProperty, NumericProperty
 from kivymd.uix.card import MDCard
 from kivymd.uix.button import MDFlatButton
 from kivymd.uix.dialog import MDDialog
@@ -68,7 +68,8 @@ class MeteoDat:
 # KivyMD ####################################################################
 class ScMg(MDScreenManager):
     reloj = StringProperty()
-    
+    a_viento = NumericProperty()
+    a_viento_s= StringProperty()
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -80,7 +81,9 @@ class ScMg(MDScreenManager):
         time = time - pd.Timedelta(hours=3) # GMT-0 a GMT-3
         lat = self.data["latitude"]
         lon = self.data["longitude"]
-        print(type(time), time)
+        self.a_viento = self.data["current"]["wind_direction_10m"]
+        self.a_viento_s = str(self.a_viento)
+        # print(type(time), time)
         self.reloj = time.strftime(f"Condiciones a las %H:%M hs del %d/%m/%y \
 || lat: {lat}, long: {lon}")
 
@@ -91,7 +94,7 @@ class MainApp(MDApp):
     title= "Veleta"
     Builder.load_file("vista.kv")
     def build(self):
-        self.theme_cls.theme_style = "Dark"
+        self.theme_cls.theme_style = "Light"
         self.theme_cls.primary_palette = "Red"
 
         return ScMg()

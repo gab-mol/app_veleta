@@ -5,22 +5,33 @@
         name: "main"
         MDBoxLayout:
             orientation: 'vertical'
+            padding: 5
+            spacing: 10
             MDTopAppBar:
                 id: "topb"
                 elevation: 4
                 title: root.reloj
             MDFloatLayout:
                 MDLabel:
-                    pos_hint: {'center_x': 0.5,'center_y': 0.9}
+                    pos_hint: {'center_x': 0.87,'center_y': 0.9}
                     font_size:25
                     # text:"[color=#C42D2D<color>]Dirección actual del viento[/color]"
-                    text: "Dirección actual del viento"
+                    text: "Dirección actual \ndel viento, a: "+root.a_viento_s+"°"
                     markup:True
                     halign: "center"
-                    # size_hint: 1, 1
-                MDLabel:
+                Image:
                     pos_hint: {'center_x': 0.5,'center_y': 0.5}
-                    font_size: 35
-                    text: "[b]aquí irá la veleta[/b]"
-                    markup:True
-                    halign: "center"
+                    source: 'dial.png'
+                    size: self.texture_size
+                Image:
+                    pos_hint: {'center_x': 0.5,'center_y': 0.5}
+                    source: 'flecha.png'
+                    size: self.texture_size                    
+                    canvas.before:
+                        PushMatrix
+                        Rotate:
+                            # Kivy rota en sentido contrario al requerido
+                            angle: 360-root.a_viento
+                            origin: self.center
+                    canvas.after:
+                        PopMatrix
