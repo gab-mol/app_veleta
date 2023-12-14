@@ -1,7 +1,6 @@
 __pycache__
 .vscode
+recursos
 config.ini
-flecha.png
-dial.png
 pr.py
 pr.kv
