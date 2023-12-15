@@ -23,15 +23,22 @@
                     pos_hint: {'center_x': 0.5,'center_y': 0.5}
                     source: './recursos/dial.png'
                     size: self.texture_size
-                Image:
-                    pos_hint: {'center_x': 0.5,'center_y': 0.5}
-                    source: './recursos/flecha.png'
+                MDLabel:
+                    pos_hint: {'center_x': 0.515,'center_y': 0.45}
                     size: self.texture_size                    
                     canvas.before:
                         PushMatrix
                         Rotate:
                             # Kivy rota en sentido contrario al requerido
-                            angle: 360-root.a_viento
+                            # además, dibujé orizontal (90° desplazado...)
+                            angle: 360-root.a_viento+90
                             origin: self.center
+                    canvas:
+                        Color:
+                            rgba:  1,.1,0,1    
+                        Triangle:
+                            points: 200,250, 565,230, 565,270 
+                        Triangle:
+                            points: 565,235, 565,265, 600,250 
                     canvas.after:
                         PopMatrix
