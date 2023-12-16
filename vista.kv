@@ -5,8 +5,8 @@
         name: "main"
         MDBoxLayout:
             orientation: 'vertical'
-            padding: 5
-            spacing: 10
+            padding: 20
+            spacing: 5
             MDTopAppBar:
                 id: "topb"
                 elevation: 4
@@ -22,27 +22,25 @@
                 Image:
                     pos_hint: {'center_x': 0.515,'center_y': 0.45}
                     source: './recursos/dial.png'
-                    size: self.texture_size
+                    size: self.texture_size 
                 MDLabel:
                     pos_hint: {'center_x': 0.515,'center_y': 0.45}
-                    size: self.texture_size                    
+                    size: self.texture_size 
                     canvas.before:
                         PushMatrix
                         Rotate:
                             # Kivy rota en sentido contrario al requerido
                             # además, dibujé orizontal (90° desplazado...)
-                            #angle: 360-root.a_viento+90
-                            angle: 0#360-0+90
+                            angle: 360-root.a_viento+90
                             origin: self.center
                     canvas:
                         Color:
                             rgba:  1,.1,0,1    
                         Triangle:
-                            points: self.center_x - self.center_x+self.center_x*.47, self.center_y,    self.center_x +self.center_x*.39, self.center_y+self.center_y*.08,    self.center_x +self.center_x*.39, self.center_y-self.center_y*.08
+                            points: self.center_x - self.center_x*.47, self.center_y,    self.center_x + self.center_x*.39, self.center_y+self.center_y*.08,    self.center_x +self.center_x*.39, self.center_y-self.center_y*.08
                         Triangle:
-                            points: self.center_x +self.center_x*.39, self.center_y-self.center_y*.05,    self.center_x +self.center_x*.39, self.center_y+self.center_y*.05,    self.center_x+self.center_x*.53, self.center_y
-                        # Rectangle:
-                        #     pos: self.center_x, self.center_y
-                        #     size: 400,1
+                            points: self.center_x + self.center_x*.39, self.center_y - self.center_y*.05,    self.center_x + self.center_x*.39, self.center_y + self.center_y*.05,    self.center_x+self.center_x*.53, self.center_y
                     canvas.after:
                         PopMatrix
+            MDBoxLayout:
+                size_hint: 1, .1
