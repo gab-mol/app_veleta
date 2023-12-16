@@ -20,7 +20,7 @@
                     markup:True
                     halign: "center"
                 Image:
-                    pos_hint: {'center_x': 0.5,'center_y': 0.5}
+                    pos_hint: {'center_x': 0.515,'center_y': 0.45}
                     source: './recursos/dial.png'
                     size: self.texture_size
                 MDLabel:
@@ -31,14 +31,18 @@
                         Rotate:
                             # Kivy rota en sentido contrario al requerido
                             # además, dibujé orizontal (90° desplazado...)
-                            angle: 360-root.a_viento+90
+                            #angle: 360-root.a_viento+90
+                            angle: 0#360-0+90
                             origin: self.center
                     canvas:
                         Color:
                             rgba:  1,.1,0,1    
                         Triangle:
-                            points: 200,250, 565,230, 565,270 
+                            points: self.center_x - self.center_x+self.center_x*.47, self.center_y,    self.center_x +self.center_x*.39, self.center_y+self.center_y*.08,    self.center_x +self.center_x*.39, self.center_y-self.center_y*.08
                         Triangle:
-                            points: 565,235, 565,265, 600,250 
+                            points: self.center_x +self.center_x*.39, self.center_y-self.center_y*.05,    self.center_x +self.center_x*.39, self.center_y+self.center_y*.05,    self.center_x+self.center_x*.53, self.center_y
+                        # Rectangle:
+                        #     pos: self.center_x, self.center_y
+                        #     size: 400,1
                     canvas.after:
                         PopMatrix
