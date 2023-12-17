@@ -8,17 +8,14 @@
             padding: 20
             spacing: 5
             MDTopAppBar:
-                id: "topb"
+                id: topb
                 elevation: 4
                 title: root.reloj
-            MDFloatLayout:
-                MDLabel:
-                    pos_hint: {'center_x': 0.87,'center_y': 0.9}
-                    font_size:25
-                    # text:"[color=#C42D2D<color>]Dirección actual del viento[/color]"
-                    text: "Dirección actual \ndel viento, a: "+root.a_viento_s+"°"
-                    markup:True
-                    halign: "center"
+            DatTab:
+                id: tabla
+                size_hint: 1, .3
+                cols: 2
+            MDFloatLayout:                
                 Image:
                     pos_hint: {'center_x': 0.515,'center_y': 0.45}
                     source: './recursos/dial.png'
@@ -44,3 +41,15 @@
                         PopMatrix
             MDBoxLayout:
                 size_hint: 1, .1
+
+<MetDat@MDCard>
+    
+    MDBoxLayout:
+        orientation: 'horizontal'
+        MDLabel:
+            size_hint: .5, 1
+            text: root.tit
+        MDLabel:
+            size_hint: .5, 1
+            text: root.dat     
+        
