@@ -1,8 +1,8 @@
 from kivy.config import Config
 ## Configuración de dimensiones de ventana
 #Config.set('graphics', 'resizable', '0') 
-Config.set('graphics', 'width', '800')
-Config.set('graphics', 'height', '950')
+Config.set('graphics', 'width', '600')
+Config.set('graphics', 'height', '650')
 from kivymd.app import MDApp
 from kivymd.uix.screenmanager import MDScreenManager
 from kivymd.uix.screen import Screen
@@ -65,6 +65,30 @@ class MeteoDat:
         #return {"actual":actual,"prediciones":prediciones}
         return actual, predicciones
 
+    def a_cardinales(self, grados:int):
+        
+        '''Transforma dirección del viento en grados (°) a 
+        puntos cardinales (Eng).
+        
+        parametros
+            `grados` : valor en grados a transformar.'''
+        
+        if grados == 0 or grados == 360:
+            return "N"
+        elif grados > 0 and grados < 90:
+            return "NO"
+        elif grados == 90:
+            return "W"
+        elif grados > 90 and grados < 180:
+            return "SO"
+        elif grados == 180:
+            return "S"
+        elif grados >  180 and grados < 270:
+            return "SE"
+        elif grados == 270:
+            return "E"
+        else:
+            return "NE"
 
 
 # KivyMD ####################################################################
@@ -77,7 +101,8 @@ class ScMg(MDScreenManager):
         self.app = MainApp.get_running_app()
         
         # Descarga desde API
-        self.data = MeteoDat().descar_datos()
+        self.con = MeteoDat()
+        self.data = self.con.descar_datos()
 
         # Datos para barra info
         time = pd.to_datetime(self.data["current"]["time"])
@@ -90,11 +115,15 @@ class ScMg(MDScreenManager):
         self.reloj = time.strftime(f"Condiciones a las %H:%M hs del %d/%m/%y \
 || lat: {lat}, long: {lon}")
 
-        # datos para grilla de info
+        # datos para grilla de info (provisorio)
+        wind_direction  = self.con.a_cardinales(
+            self.data["current"]["wind_direction_10m"]
+        )
+
         self.cargar_dat(
             str(self.data["current"]["rain"]),
             str(self.data["current"]["wind_speed_10m"]),
-            str(self.data["current"]["wind_direction_10m"]),
+            wind_direction,
             str( self.data["current"]["temperature_2m"])
         )
         
@@ -120,21 +149,9 @@ class MetDat(MDCard):
         self.tit = tit
         self.dat = dat
         self.md_bg_color = col
-
-
-class DatTab(MDGridLayout):
-    pass
-    # tit = StringProperty()
-    # veloc = StringProperty()
-    # direc = StringProperty()
-    # otro  = StringProperty()
     
-    # def __init__(self, lista:list, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     self.add_widget(MetDat(tit="prob_precip", dat=lista[0], col="#76C7E8"))
-    #     self.add_widget(MetDat(tit="veloc_v", dat=lista[1], col="#99E876"))
-    #     self.add_widget(MetDat(tit="direc_v", dat=lista[2], col="#99E876"))
-    #     self.add_widget(MetDat(tit="otro", dat=lista[3], col="#E6E6E6"))
+
+class DatTab(MDGridLayout):pass
 
 
 class MainApp(MDApp):
@@ -146,13 +163,6 @@ class MainApp(MDApp):
 
         return ScMg()
 
-    # def cargar_dat(self, prob, veloc, direc, otro):
-    #     print(prob, veloc, direc, otro)
-    #     for tit, dat, col in zip(["prob_precip","veloc_v","direc_v","otro"],
-    #                             [prob, veloc, direc, otro],
-    #                             ["#76C7E8", "#99E876", "#99E876", "#E6E6E6"]):
-    #         self.root.ids.tabla.add_widget(MetDat(tit=tit, dat=dat, col=col))
-    
     def on_start(self):pass
         # self.cargar_dat()
 

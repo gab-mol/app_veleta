@@ -13,6 +13,7 @@
                 title: root.reloj
             DatTab:
                 id: tabla
+                spacing: 5
                 size_hint: 1, .3
                 cols: 2
             MDFloatLayout:                
@@ -47,9 +48,14 @@
     MDBoxLayout:
         orientation: 'horizontal'
         MDLabel:
-            size_hint: .5, 1
-            text: root.tit
+            size_hint: .6, 1
+            text: "   "+root.tit+" :"
+            font_size: 25
+            halign: "center"
+
         MDLabel:
-            size_hint: .5, 1
-            text: root.dat     
-        
+            size_hint: .4, 1
+            text: "  [b]"+root.dat+"[/b]"
+            markup: True
+            font_size: 20
+            halign: "left"
