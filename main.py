@@ -18,7 +18,7 @@ import os
 import configparser as confp
 import requests
 import pandas as pd
-import datetime
+from datetime import datetime, timedelta
 from pprint import pprint
 
 Builder.load_file("vista.kv")
@@ -80,16 +80,35 @@ class MeteoDat:
         elif grados == 90:
             return "W"
         elif grados > 90 and grados < 180:
-            return "SO"
+            return "SE"
         elif grados == 180:
             return "S"
         elif grados >  180 and grados < 270:
-            return "SE"
+            return "SO"
         elif grados == 270:
             return "E"
         else:
             return "NE"
 
+    def prob_prec(self, predicc:pd.DataFrame, h_prec:int):
+        '''
+        Obtiene la fila del Datafreme de condiciones predichas por horas,
+        la correspondiente a la cantidad indicada de horas a futuro.
+
+        Parametros
+            predicc: elemento 'hourly' de la respuesta de API, \
+convertido a pandas.Dataframe.
+            h_prec: número de horas futuras sumadas a la actual.
+        '''
+
+        # Hora futura deseada
+        ts = datetime.now() + timedelta(hours=h_prec)
+        ts_h = ts.strftime('%H')
+        
+        # convertir columna a timestamp, y luego a str solo con la hora
+        predicc['time'] = pd.to_datetime(predicc['time']).dt.strftime('%H')
+
+        return predicc.loc[predicc['time'] == ts_h]
 
 # KivyMD ####################################################################
 class ScMg(MDScreenManager):
@@ -126,7 +145,7 @@ class ScMg(MDScreenManager):
             wind_direction,
             str( self.data["current"]["temperature_2m"])
         )
-        
+
     def cargar_dat(self, prec, veloc, direc, temp):
         print(prec, veloc, direc, temp)
         for tit, dat, col in zip(["precip","veloc_v","direc_v","temp"],
