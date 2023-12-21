@@ -74,37 +74,37 @@ class MeteoDat:
         Parametros
             grados: valor en grados a transformar.'''
         
-        if grados == 0 or grados == 360:
+        if grados >= 355 or grados <= 5:
             return "N"
-        elif grados > 0 and grados <= 30:
+        elif grados > 5 and grados <= 30:
             return "NNE"
         elif grados > 30 and grados <= 60:
             return "NE"
-        elif grados > 60 and grados < 90:
+        elif grados > 60 and grados < 85:
             return "ENE"
-        elif grados == 90:
+        elif grados >= 85 and grados <= 95:
             return "E"
-        elif grados > 90 and grados <= 120:
+        elif grados > 95 and grados <= 120:
             return "ESE"
-        elif grados > 120 and grados < 150:
+        elif grados > 120 and grados <= 150:
             return "SE"
-        elif grados > 150 and grados < 180:
+        elif grados > 150 and grados < 175:
             return "SSE"
-        elif grados == 180:
+        elif grados >= 175 and grados <= 185:
             return "S"
-        elif grados > 180 and grados <= 210:
+        elif grados > 185 and grados <= 210:
             return "SSO"
         elif grados > 210 and grados <= 240:
             return "SO"
-        elif grados > 240 and grados <= 270:
+        elif grados > 240 and grados <= 265:
             return "OSO"
-        elif grados == 270:
+        elif grados >= 265 and grados <= 275:
             return "O"
-        elif grados > 270 and grados <= 300:
+        elif grados > 275 and grados <= 300:
             return "ONO"
         elif grados > 300 and grados <= 330:
             return "NO"
-        else:
+        elif grados > 330 and grados <= 355:
             return "NNO"
 
     def prob_prec(self, predicc:pd.DataFrame, h_prec:int) -> np.int64:
