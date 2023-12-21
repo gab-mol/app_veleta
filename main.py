@@ -18,6 +18,7 @@ import os
 import configparser as confp
 import requests
 import pandas as pd
+import numpy as np
 from datetime import datetime, timedelta
 from pprint import pprint
 
@@ -70,35 +71,54 @@ class MeteoDat:
         '''Transforma dirección del viento en grados (°) a 
         puntos cardinales (Eng).
         
-        parametros
-            `grados` : valor en grados a transformar.'''
+        Parametros
+            grados: valor en grados a transformar.'''
         
         if grados == 0 or grados == 360:
             return "N"
-        elif grados > 0 and grados < 90:
-            return "NO"
+        elif grados > 0 and grados <= 30:
+            return "NNE"
+        elif grados > 30 and grados <= 60:
+            return "NE"
+        elif grados > 60 and grados < 90:
+            return "ENE"
         elif grados == 90:
-            return "W"
-        elif grados > 90 and grados < 180:
+            return "E"
+        elif grados > 90 and grados <= 120:
+            return "ESE"
+        elif grados > 120 and grados < 150:
             return "SE"
+        elif grados > 150 and grados < 180:
+            return "SSE"
         elif grados == 180:
             return "S"
-        elif grados >  180 and grados < 270:
+        elif grados > 180 and grados <= 210:
+            return "SSO"
+        elif grados > 210 and grados <= 240:
             return "SO"
+        elif grados > 240 and grados <= 270:
+            return "OSO"
         elif grados == 270:
-            return "E"
+            return "O"
+        elif grados > 270 and grados <= 300:
+            return "ONO"
+        elif grados > 300 and grados <= 330:
+            return "NO"
         else:
-            return "NE"
+            return "NNO"
 
-    def prob_prec(self, predicc:pd.DataFrame, h_prec:int):
+    def prob_prec(self, predicc:pd.DataFrame, h_prec:int) -> np.int64:
         '''
         Obtiene la fila del Datafreme de condiciones predichas por horas,
         la correspondiente a la cantidad indicada de horas a futuro.
 
-        Parametros
+        ## Parametros
             predicc: elemento 'hourly' de la respuesta de API, \
 convertido a pandas.Dataframe.
             h_prec: número de horas futuras sumadas a la actual.
+
+        ## Return
+            Valor de probablilidad de precipitaciones para hora futura.
         '''
 
         # Hora futura deseada
@@ -107,8 +127,11 @@ convertido a pandas.Dataframe.
         
         # convertir columna a timestamp, y luego a str solo con la hora
         predicc['time'] = pd.to_datetime(predicc['time']).dt.strftime('%H')
+        fila_predicc = predicc.loc[predicc['time'] == ts_h]
 
-        return predicc.loc[predicc['time'] == ts_h]
+        # Retornar valor
+        return fila_predicc["precipitation_probability"].iloc[0]
+         
 
 # KivyMD ####################################################################
 class ScMg(MDScreenManager):
@@ -138,9 +161,13 @@ class ScMg(MDScreenManager):
         wind_direction  = self.con.a_cardinales(
             self.data["current"]["wind_direction_10m"]
         )
+        prob_ll = self.con.prob_prec(
+            pd.DataFrame(self.data["hourly"]), 
+            h_prec= 1
+        )
 
         self.cargar_dat(
-            str(self.data["current"]["rain"]),
+            str(prob_ll)+" %",
             str(self.data["current"]["wind_speed_10m"]),
             wind_direction,
             str( self.data["current"]["temperature_2m"])
@@ -148,9 +175,10 @@ class ScMg(MDScreenManager):
 
     def cargar_dat(self, prec, veloc, direc, temp):
         print(prec, veloc, direc, temp)
-        for tit, dat, col in zip(["precip","veloc_v","direc_v","temp"],
+        for tit, dat, col in zip(["Precipitaciones en 1 h","Velocidad del viento",
+                                  "Viento desde","Temperatura"],
                                 [prec, veloc, direc, temp],
-                                ["#76C7E8", "#99E876", "#99E876", "#E89090"]):
+                                ["#76C7E8", "#99E876", "#B3E876", "#E89090"]):
             self.ids.tabla.add_widget(MetDat(tit=tit, dat=dat, col=col))
             
             
