@@ -167,10 +167,10 @@ class ScMg(MDScreenManager):
         )
 
         self.cargar_dat(
-            str(prob_ll)+" %",
-            str(self.data["current"]["wind_speed_10m"]),
+            "  "+str(prob_ll)+" %",
+            str(self.data["current"]["wind_speed_10m"])+" km/h",
             wind_direction,
-            str( self.data["current"]["temperature_2m"])
+            str(self.data["current"]["temperature_2m"])+" °C"
         )
 
     def cargar_dat(self, prec, veloc, direc, temp):
