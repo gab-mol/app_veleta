@@ -1,6 +1,6 @@
 from kivy.config import Config
 ## Configuración de dimensiones de ventana
-#Config.set('graphics', 'resizable', '0') 
+Config.set('graphics', 'resizable', '0') 
 Config.set('graphics', 'width', '600')
 Config.set('graphics', 'height', '650')
 from kivymd.app import MDApp
