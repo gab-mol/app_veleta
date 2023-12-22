@@ -20,6 +20,7 @@ import requests
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+from threading import Thread
 from pprint import pprint
 
 Builder.load_file("vista.kv")
@@ -132,6 +133,19 @@ convertido a pandas.Dataframe.
         # Retornar valor
         return fila_predicc["precipitation_probability"].iloc[0]
          
+
+class Reloj:
+    '''
+    Controla actualización de descarga de datos
+    desde API.
+    '''
+    def __init__(self) -> None:
+        pass
+
+    def bucle_descarga(self):
+        ...
+
+
 
 # KivyMD ####################################################################
 class ScMg(MDScreenManager):
