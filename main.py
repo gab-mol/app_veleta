@@ -6,12 +6,12 @@ Config.set('graphics', 'height', '650')
 from kivymd.app import MDApp
 from kivymd.uix.screenmanager import MDScreenManager
 from kivymd.uix.screen import Screen
-from kivymd.uix.label import MDLabel
+# from kivymd.uix.label import MDLabel
 from kivymd.uix.gridlayout import MDGridLayout
 from kivy.properties import StringProperty, NumericProperty, DictProperty
 from kivymd.uix.card import MDCard
-from kivymd.uix.button import MDFlatButton
-from kivymd.uix.dialog import MDDialog
+# from kivymd.uix.button import MDFlatButton
+# from kivymd.uix.dialog import MDDialog
 from kivy.lang import Builder
 from kivy.clock import Clock
 
@@ -122,7 +122,7 @@ convertido a pandas.Dataframe.
 
         # Retornar valor
         return fila_predicc["precipitation_probability"].iloc[0]
-         
+
 
 # KivyMD ####################################################################
 class ScMg(MDScreenManager):
@@ -143,13 +143,13 @@ class ScMg(MDScreenManager):
         y actualiza la GUI.
         Pensada para ejecutarse regularmente con `kivy.clock.Clock`.
         '''
+        print("\Cargando GUI con datos...\n")
         
         # Recuperar datos desde app
         cond_ahora = self.app.meteo_data["current"]
         cond_pred = self.app.meteo_data["hourly"]
         
         direc = cond_ahora["wind_direction_10m"]
-        print(f"\nEjecutando:\n,dict:\n{direc}")
         
         # Barra info
         time = pd.to_datetime(cond_ahora["time"])
@@ -167,21 +167,22 @@ class ScMg(MDScreenManager):
             pd.DataFrame(cond_pred), 
             h_prec= 1))
         veloc = str(cond_ahora["wind_speed_10m"])+" km/h"
-        direc  = MeteoDat.a_cardinales(direc)
+        direc_s  = MeteoDat.a_cardinales(direc)
         temp = str(cond_ahora["temperature_2m"])+" °C"
 
         ## Recargar datos de tarjetas
         self.limp_tarj()
         for tit, dat, col in zip(["Precipitaciones en 1 h","Velocidad del viento",
                                   "Viento desde","Temperatura"],
-                                [prob_ll, veloc, direc, temp],
+                                [prob_ll, veloc, direc_s, temp],
                                 ["#76C7E8", "#99E876", "#B3E876", "#E89090"]):
             self.ids.tabla.add_widget(MetDat(tit=tit, dat=dat, col=col))
             
     def limp_tarj(self):
         '''Limpiar tarjetas'''
         self.ids.tabla.clear_widgets()
-        
+
+
 class Veleta(Screen):pass
 
 
