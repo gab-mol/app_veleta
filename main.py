@@ -8,11 +8,12 @@ from kivymd.uix.screenmanager import MDScreenManager
 from kivymd.uix.screen import Screen
 from kivymd.uix.label import MDLabel
 from kivymd.uix.gridlayout import MDGridLayout
-from kivy.properties import StringProperty, NumericProperty
+from kivy.properties import StringProperty, NumericProperty, DictProperty
 from kivymd.uix.card import MDCard
 from kivymd.uix.button import MDFlatButton
 from kivymd.uix.dialog import MDDialog
 from kivy.lang import Builder
+from kivy.clock import Clock
 
 import os
 import configparser as confp
@@ -37,7 +38,7 @@ class Config:
     
 
 class MeteoDat:
-    '''Conexión con API y extracción,'''
+    '''Conexión con API y extracción'''
     def __init__(self) -> None:
         self.cfgp = Config()
         self.url = self.cfgp.endpoint_url()
@@ -54,20 +55,8 @@ class MeteoDat:
         except:
             raise Exception("No se obtuvo respuesta desde API")
 
-    def datos_ord(self):
-        '''Entrega todos los datos ordenadas en pandas.Dataframe 
-        para su uso en app.'''
-        json = self.descar_datos()
-        pprint(list(json.keys()))
-        pprint(json["current"])
-        print("\nPor horas:\n")
-        predicciones = pd.DataFrame(json["hourly"])
-        actual = pd.DataFrame(json["current"])
-
-        #return {"actual":actual,"prediciones":prediciones}
-        return actual, predicciones
-
-    def a_cardinales(self, grados:int):
+    @staticmethod
+    def a_cardinales(grados:int):
         
         '''Transforma dirección del viento en grados (°) a 
         puntos cardinales (Eng).
@@ -108,7 +97,8 @@ class MeteoDat:
         elif grados > 330 and grados <= 355:
             return "NNO"
 
-    def prob_prec(self, predicc:pd.DataFrame, h_prec:int) -> np.int64:
+    @staticmethod
+    def prob_prec(predicc:pd.DataFrame, h_prec:int) -> np.int64:
         '''
         Obtiene la fila del Datafreme de condiciones predichas por horas,
         la correspondiente a la cantidad indicada de horas a futuro.
@@ -134,68 +124,64 @@ convertido a pandas.Dataframe.
         return fila_predicc["precipitation_probability"].iloc[0]
          
 
-class Reloj:
-    '''
-    Controla actualización de descarga de datos
-    desde API.
-    '''
-    def __init__(self) -> None:
-        pass
-
-    def bucle_descarga(self):
-        ...
-
-
-
 # KivyMD ####################################################################
 class ScMg(MDScreenManager):
     reloj = StringProperty()
     a_viento = NumericProperty()
     a_viento_s= StringProperty()
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.app = MainApp.get_running_app()
         
-        # Descarga desde API
-        self.con = MeteoDat()
-        self.data = self.con.descar_datos()
+        # Bucle de actualización de GUI
+        self.cargar_dat()
+        Clock.schedule_interval(self.cargar_dat,850)
 
-        # Datos para barra info
-        time = pd.to_datetime(self.data["current"]["time"])
+    def cargar_dat(self, *args):
+        '''Toma datos de la propiedad `meteo_data` de la instancia de `MainApp`, 
+        y actualiza la GUI.
+        Pensada para ejecutarse regularmente con `kivy.clock.Clock`.
+        '''
+        
+        # Recuperar datos desde app
+        cond_ahora = self.app.meteo_data["current"]
+        cond_pred = self.app.meteo_data["hourly"]
+        
+        direc = cond_ahora["wind_direction_10m"]
+        print(f"\nEjecutando:\n,dict:\n{direc}")
+        
+        # Barra info
+        time = pd.to_datetime(cond_ahora["time"])
         time = time - pd.Timedelta(hours=3) # GMT-0 a GMT-3
-        lat = self.data["latitude"]
-        lon = self.data["longitude"]
-        self.a_viento = self.data["current"]["wind_direction_10m"]
-        self.a_viento_s = str(self.a_viento)
-        # print(type(time), time)
+        lat = self.app.meteo_data["latitude"]
+        lon = self.app.meteo_data["longitude"]
+        
+        self.a_viento = direc
+        self.a_viento_s = str(direc)              
         self.reloj = time.strftime(f"Condiciones a las %H:%M hs del %d/%m/%y \
 || lat: {lat}, long: {lon}")
 
-        # datos para grilla de info (provisorio)
-        wind_direction  = self.con.a_cardinales(
-            self.data["current"]["wind_direction_10m"]
-        )
-        prob_ll = self.con.prob_prec(
-            pd.DataFrame(self.data["hourly"]), 
-            h_prec= 1
-        )
+        # Tarjetas   
+        prob_ll = str(MeteoDat.prob_prec(
+            pd.DataFrame(cond_pred), 
+            h_prec= 1))
+        veloc = str(cond_ahora["wind_speed_10m"])+" km/h"
+        direc  = MeteoDat.a_cardinales(direc)
+        temp = str(cond_ahora["temperature_2m"])+" °C"
 
-        self.cargar_dat(
-            "  "+str(prob_ll)+" %",
-            str(self.data["current"]["wind_speed_10m"])+" km/h",
-            wind_direction,
-            str(self.data["current"]["temperature_2m"])+" °C"
-        )
-
-    def cargar_dat(self, prec, veloc, direc, temp):
-        print(prec, veloc, direc, temp)
+        ## Recargar datos de tarjetas
+        self.limp_tarj()
         for tit, dat, col in zip(["Precipitaciones en 1 h","Velocidad del viento",
                                   "Viento desde","Temperatura"],
-                                [prec, veloc, direc, temp],
+                                [prob_ll, veloc, direc, temp],
                                 ["#76C7E8", "#99E876", "#B3E876", "#E89090"]):
             self.ids.tabla.add_widget(MetDat(tit=tit, dat=dat, col=col))
             
-            
+    def limp_tarj(self):
+        '''Limpiar tarjetas'''
+        self.ids.tabla.clear_widgets()
+        
 class Veleta(Screen):pass
 
 
@@ -217,17 +203,37 @@ class DatTab(MDGridLayout):pass
 
 class MainApp(MDApp):
     title= "Veleta"
-    # Builder.load_file("vista.kv")
+    
+    meteo_data = DictProperty()
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.con = MeteoDat()
+        
     def build(self):
         self.theme_cls.theme_style = "Light"
         self.theme_cls.primary_palette = "Red"
-
+        
+        # Descargar datos y lanzar hilo de actualización cada 900s
+        self.meteo_data = self.con.descar_datos()
+        Thread(target=Clock.schedule_interval(self.consulta_api,900),
+               daemon=True).start()
+        
         return ScMg()
-
-    def on_start(self):pass
-        # self.cargar_dat()
-
-
+    
+    def consulta_api(self, *args):
+        '''
+        Actualizar información si la aplicación 
+        se deja abierta más de 15 minutos.
+        '''
+        print("\n\nEjecundo: consulta_api\n\n")
+        try:
+            self.meteo_data = self.con.descar_datos()
+        except:
+            raise Exception("Error en consulta a API. \n\
+No se pueden actualizar los datos.")
+        
+        
 if __name__ == "__main__":
 
     MainApp().run()
