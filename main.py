@@ -1,12 +1,12 @@
 from kivy.config import Config
 ## Configuración de dimensiones de ventana
-Config.set('graphics', 'resizable', '0') 
+# Config.set('graphics', 'resizable', '0') 
 Config.set('graphics', 'width', '600')
-Config.set('graphics', 'height', '650')
+Config.set('graphics', 'height', '660')
 from kivymd.app import MDApp
 from kivymd.uix.screenmanager import MDScreenManager
 from kivymd.uix.screen import Screen
-# from kivymd.uix.label import MDLabel
+from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.gridlayout import MDGridLayout
 from kivy.properties import StringProperty, NumericProperty, DictProperty
 from kivymd.uix.card import MDCard
@@ -126,7 +126,9 @@ convertido a pandas.Dataframe.
 
 # KivyMD ####################################################################
 class ScMg(MDScreenManager):
+
     reloj = StringProperty()
+    coord = StringProperty()
     a_viento = NumericProperty()
     a_viento_s= StringProperty()
     
@@ -159,9 +161,8 @@ class ScMg(MDScreenManager):
         
         self.a_viento = direc
         self.a_viento_s = str(direc)              
-        self.reloj = time.strftime(f"Condiciones a las %H:%M hs del %d/%m/%y \
-|| lat: {lat}, long: {lon}")
-
+        self.reloj = time.strftime(f"%H:%M hs. del %d/%m/%y")
+        self.coord = f"lat: {lat}, long: {lon}"
         # Tarjetas   
         prob_ll = str(MeteoDat.prob_prec(
             pd.DataFrame(cond_pred), 
@@ -213,7 +214,7 @@ class MainApp(MDApp):
         
     def build(self):
         self.theme_cls.theme_style = "Light"
-        self.theme_cls.primary_palette = "Red"
+        self.theme_cls.primary_palette = "Orange"
         
         # Descargar datos y lanzar hilo de actualización cada 900s
         self.meteo_data = self.con.descar_datos()
