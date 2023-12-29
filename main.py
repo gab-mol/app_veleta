@@ -49,12 +49,15 @@ class MeteoDat:
 
         return: diccionario con los datos meteorológicos.
         '''
+        print("Haciendo consulta")
         try:
             respuesta = requests.get(self.url)
-            return respuesta.json()
+            respuesta = respuesta.json()
+            respuesta["err"] = False
+            return respuesta
         except:
-            #raise Exception("No se obtuvo respuesta desde API")
-            return None
+            print("Error: No se obtuvo respuesta desde API")
+            return {"err": True}
 
     @staticmethod
     def a_cardinales(grados:int):
@@ -138,16 +141,20 @@ class ScMg(MDScreenManager):
     a_viento_s= StringProperty()
 
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self, err=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.app = MainApp.get_running_app()
-        
-        # Bucle de actualización de GUI
-        self.cargar_dat()
-        Clock.schedule_interval(self.cargar_dat,850)
 
-        # PARA TRABAJAR (ELIMINAR LUEGO)
-        #self.current = "eleg_loc"
+        
+        if err:
+        # Si ocurre error de conexión    
+            self.current = "conex_err" 
+        else:  
+            # Bucle de actualización de GUI
+            self.cargar_dat()
+            Clock.schedule_interval(self.cargar_dat,850)
+
+
 
     def cargar_dat(self, *args):
         '''Toma datos de la propiedad `meteo_data` de la instancia de `MainApp`, 
@@ -229,21 +236,22 @@ class MainApp(MDApp):
         
         # Descargar datos y lanzar hilo de actualización cada 900s
         self.meteo_data = self.con.descar_datos()
-        #  Avisar de error de conexión al usuario
-        if not self.meteo_data:
+        ## Avisar de error de conexión al usuario
+        if self.meteo_data["err"]:
             self.endp = self.conf.endpoint_url()
-            self.root.current = "conex_err"
-        Thread(target=Clock.schedule_interval(self.consulta_api,900),
-               daemon=True).start()
-        
-        return ScMg()
+            return ScMg(err=True)
+        else:
+            Thread(target=Clock.schedule_interval(self.consulta_api,900),
+                daemon=True).start()
+            
+            return ScMg()
     
     def consulta_api(self, *args):
         '''
         Actualizar información si la aplicación 
         se deja abierta más de 15 minutos.
         '''
-        print("\n\nEjecundo: consulta_api\n\n")
+        print("\n\nEjecutando: consulta_api\n\n")
         try:
             self.meteo_data = self.con.descar_datos()
         except:
