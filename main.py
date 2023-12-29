@@ -39,8 +39,8 @@ class Config:
 
 class MeteoDat:
     '''Conexión con API y extracción'''
-    def __init__(self) -> None:
-        self.cfgp = Config()
+    def __init__(self, conf:Config) -> None:
+        self.cfgp = conf
         self.url = self.cfgp.endpoint_url()
 
     def descar_datos(self) -> dict:
@@ -53,7 +53,8 @@ class MeteoDat:
             respuesta = requests.get(self.url)
             return respuesta.json()
         except:
-            raise Exception("No se obtuvo respuesta desde API")
+            #raise Exception("No se obtuvo respuesta desde API")
+            return None
 
     @staticmethod
     def a_cardinales(grados:int):
@@ -124,13 +125,18 @@ convertido a pandas.Dataframe.
         return fila_predicc["precipitation_probability"].iloc[0]
 
 
+class GeoCod:
+    def __init__(self) -> None:
+        pass
+
 # KivyMD ####################################################################
 class ScMg(MDScreenManager):
-
+    localid = StringProperty()
     reloj = StringProperty()
     coord = StringProperty()
     a_viento = NumericProperty()
     a_viento_s= StringProperty()
+
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -139,6 +145,9 @@ class ScMg(MDScreenManager):
         # Bucle de actualización de GUI
         self.cargar_dat()
         Clock.schedule_interval(self.cargar_dat,850)
+
+        # PARA TRABAJAR (ELIMINAR LUEGO)
+        #self.current = "eleg_loc"
 
     def cargar_dat(self, *args):
         '''Toma datos de la propiedad `meteo_data` de la instancia de `MainApp`, 
@@ -159,22 +168,23 @@ class ScMg(MDScreenManager):
         lat = self.app.meteo_data["latitude"]
         lon = self.app.meteo_data["longitude"]
         
+        self.localid = "<proximamente>"
         self.a_viento = direc
         self.a_viento_s = str(direc)              
         self.reloj = time.strftime(f"%H:%M hs. del %d/%m/%y")
-        self.coord = f"lat: {lat}, long: {lon}"
+        self.coord = f"Latitud: {lat}, Longitud: {lon}"
         # Tarjetas   
-        prob_ll = str(MeteoDat.prob_prec(
+        prob_ll = "   "+str(MeteoDat.prob_prec(
             pd.DataFrame(cond_pred), 
-            h_prec= 1))
+            h_prec= 1))+" %"
         veloc = str(cond_ahora["wind_speed_10m"])+" km/h"
-        direc_s  = MeteoDat.a_cardinales(direc)
+        direc_s  = "   "+MeteoDat.a_cardinales(direc)
         temp = str(cond_ahora["temperature_2m"])+" °C"
 
         ## Recargar datos de tarjetas
         self.limp_tarj()
-        for tit, dat, col in zip(["Precipitaciones en 1 h","Velocidad del viento",
-                                  "Viento desde","Temperatura"],
+        for tit, dat, col in zip(["Precipitaciones en 1 h ","Velocidad del viento ",
+                                  "Viento desde ","Temperatura "],
                                 [prob_ll, veloc, direc_s, temp],
                                 ["#76C7E8", "#99E876", "#B3E876", "#E89090"]):
             self.ids.tabla.add_widget(MetDat(tit=tit, dat=dat, col=col))
@@ -207,17 +217,22 @@ class MainApp(MDApp):
     title= "Veleta"
     
     meteo_data = DictProperty()
-    
+    endp = StringProperty()
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.con = MeteoDat()
-        
+        self.conf = Config()
+        self.con = MeteoDat(self.conf)
     def build(self):
         self.theme_cls.theme_style = "Light"
         self.theme_cls.primary_palette = "Orange"
         
         # Descargar datos y lanzar hilo de actualización cada 900s
         self.meteo_data = self.con.descar_datos()
+        #  Avisar de error de conexión al usuario
+        if not self.meteo_data:
+            self.endp = self.conf.endpoint_url()
+            self.root.current = "conex_err"
         Thread(target=Clock.schedule_interval(self.consulta_api,900),
                daemon=True).start()
         
@@ -234,6 +249,9 @@ class MainApp(MDApp):
         except:
             raise Exception("Error en consulta a API. \n\
 No se pueden actualizar los datos.")
+        
+    def pantalla(self,pantalla):
+        self.root.current = pantalla
         
         
 if __name__ == "__main__":

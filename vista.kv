@@ -4,20 +4,21 @@
         MDTopAppBar:
             id: topb
             elevation: 2
-            title: "[size=25]Condiciones en "+"<ciudad>[/size]\n"+root.reloj
+            title: "[size=25]Condiciones en "+root.localid+"[/size]\n"
             markup: True
             pos_hint: {'top': 1}
             size_hint: 1, .1
-            right_action_items: [["dots-vertical",lambda x: banner.show()]]
+            right_action_items: [["information",lambda x: banner.show()]]
         MDBanner:
             id: banner
             # Si va una sola línea no uso type
             #type: "two-line"  # Si van dos líneas
             type: "two-line"
-            text: [root.coord, "Botones?"]
-            left_action: ["CANCEL", lambda x: None]
+            text: ["Data de: "+root.reloj, "Para coord.: "+root.coord]
+            left_action: ["Localidad", lambda x: app.pantalla("eleg_loc")]
             right_action: ["CLOSE", lambda x: None]
             over_widget: meteo
+            height: 10
             vertical_pad: topb.height
         MDBoxLayout:
             id: meteo
@@ -116,7 +117,39 @@
                         PopMatrix
             MDBoxLayout:
                 size_hint: 1, .1
-
+    Screen:
+        name:"eleg_loc"
+        MDFloatLayout:
+            # orientation: 'vertical'
+            MDLabel:
+                size_hint: None, None
+                pos_hint: {'right': 0.5,'top': 0.1}
+                width: self.width
+                #height: self.height
+                halign:"center"
+                text: "Buscar ciudad:"
+                font_size: 30
+                md_bg_color: "FF9800"
+    Screen:
+        name: "conex_err"
+        MDBoxLayout:
+            md_bg_color: .9,0,.1
+            orientation: 'vertical'
+            MDLabel:
+                size_hint: 1,.3
+                text: "Falló la conexión con API meteorológica..."
+                halign: "center"
+                font_size: 50
+                bold: True
+                color: 1,1,1
+            MDLabel:
+                pos_hint: {'right': .9}
+                size_hint: .8,.7
+                halign: "center"
+                valign: "top"
+                text: "[b]origdata = [/b]"+app.endp
+                markup: True
+                color: 1,1,1
 <MetDat@MDCard>
     
     MDBoxLayout:
