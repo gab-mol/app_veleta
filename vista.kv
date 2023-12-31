@@ -1,4 +1,5 @@
 <ScMg>
+    ciud_input: ciud_resp.text
     Screen:
         name: "main"
         MDTopAppBar:
@@ -97,7 +98,6 @@
                 MDLabel:
                     pos_hint: {'center_x': 0.515,'center_y': 0.45}
                     size: self.texture_size 
-                    
                     canvas.before:
                         PushMatrix
                         Rotate:
@@ -118,18 +118,37 @@
             MDBoxLayout:
                 size_hint: 1, .1
     Screen:
+
+
+
         name:"eleg_loc"
-        MDFloatLayout:
-            # orientation: 'vertical'
-            MDLabel:
-                size_hint: None, None
-                pos_hint: {'right': 0.5,'top': 0.1}
-                width: self.width
-                #height: self.height
-                halign:"center"
-                text: "Buscar ciudad:"
-                font_size: 30
-                md_bg_color: "FF9800"
+        MDBoxLayout:
+            orientation: 'vertical'
+            spacing: 10
+            MDTopAppBar:
+                title: "Búsqueda de localidades"
+            MDBoxLayout:
+                size_hint: 1,.9
+                orientation: 'vertical'
+                spacing: 5
+                MDTextField:
+                    id: ciud_resp
+                    size_hint: .97, .1
+                    pos_hint: {'center_x': .5,'top': .8}
+                    hint_text: "Ciudad..."
+                    mode: "rectangle"
+                    max_text_length: 15
+                    helper_text: "Escribir"
+                MDFillRoundFlatButton:
+                    pos_hint: {'center_x': .5}
+                    size_hint: .5, .1
+                    text: "Buscar"
+                    custom_color: "white"
+                    on_release: root.buscar_ciud()
+                ScrollView:
+                    size_hint: 1, .8
+                    MDList:
+                        id: list_ciud            
     Screen:
         name: "conex_err"
         MDBoxLayout:
@@ -158,8 +177,9 @@
                 text: "[b]origdata = [/b]"+app.endp
                 markup: True
                 color: 1,1,1
+
+
 <MetDat@MDCard>
-    
     MDBoxLayout:
         orientation: 'horizontal'
         MDLabel:
@@ -179,3 +199,9 @@
 <PuntCardLab@MDLabel>
     font_size: 20
     bold: True
+
+
+<CiudItem>
+    on_release: 
+        root.click()
+        app.root.confirmar_ciud()

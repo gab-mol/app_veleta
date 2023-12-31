@@ -8,12 +8,17 @@ from kivymd.uix.screenmanager import MDScreenManager
 from kivymd.uix.screen import Screen
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.gridlayout import MDGridLayout
-from kivy.properties import StringProperty, NumericProperty, DictProperty
+from kivy.properties import StringProperty, NumericProperty, DictProperty, ListProperty
 from kivymd.uix.card import MDCard
-# from kivymd.uix.button import MDFlatButton
+from kivymd.uix.list import OneLineListItem
+from kivymd.uix.label import MDLabel
 # from kivymd.uix.dialog import MDDialog
 from kivy.lang import Builder
 from kivy.clock import Clock
+import asynckivy as ak
+
+
+import multitasking
 
 import os
 import configparser as confp
@@ -33,15 +38,17 @@ class Config:
         self.cfg = confp.ConfigParser()
         self.cfg.read(os.path.join(DIR, "config.ini"))
 
-    def endpoint_url(self):
+    def meteo_url(self):
         return self.cfg["endpoint"]["origdata"]
-    
+
+    def loc_url(self):
+        return self.cfg["endpoint"]["localidad"]  
 
 class MeteoDat:
     '''Conexión con API y extracción'''
     def __init__(self, conf:Config) -> None:
         self.cfgp = conf
-        self.url = self.cfgp.endpoint_url()
+        self.url = self.cfgp.meteo_url()
 
     def descar_datos(self) -> dict:
         '''
@@ -51,9 +58,9 @@ class MeteoDat:
         '''
         print("Haciendo consulta")
         try:
-            respuesta = requests.get(self.url)
-            respuesta = respuesta.json()
-            respuesta["err"] = False
+            with requests.get(self.url) as req:
+                respuesta = req.json()
+                respuesta["err"] = False
             return respuesta
         except:
             print("Error: No se obtuvo respuesta desde API")
@@ -129,17 +136,87 @@ convertido a pandas.Dataframe.
 
 
 class GeoCod:
-    def __init__(self) -> None:
-        pass
-
+    
+    '''Administra consultas a "Geocoding API"'''
+    
+    def __init__(self, config:Config):
+        '''
+        Parámetros
+            config: instancia de clase de configuración.
+        '''
+        self.config = config
+        self.endp = self.config.loc_url()
+        
+    
+    async def consulta_api(self,input:str) -> dict:
+        '''
+        Confecciona URL para y los usa para consultar a
+        API-Geocoding.
+        
+        Parámetros
+            input: nombre de localidad deseada.
+        '''
+        input = input.replace(" ", "+")
+        param = f"name={input}&count={20}&language=es&format=json"
+        url = self.endp+param
+        try:
+            with requests.get(url) as req:
+                dic_ciud = req.json()
+                dic_ciud["err"] = False
+                
+                # crear clave por orden
+                nitems = range(len(dic_ciud['results']))
+                for i in nitems:
+                    dic_ciud['results'][i]["id"] = str(i)
+            return dic_ciud
+        except:
+            print("\nERROR requests")
+            return {"err":True}
+            #raise Exception("Error de conexión: Geocoding API")
+        
+    def listar_res(self, dic_ciud:dict) -> list:
+        '''
+        Crea lista de elementos para mostrar al usario las opciones
+        derivadas de su búsqueda.
+        
+        Parámetros
+            dic_ciud: diccionario obtenido de la API.
+        '''
+        
+        str_res_ciud = []
+        print(dic_ciud["err"],"\n",list(dic_ciud.keys()))     
+        if dic_ciud["err"]:
+            str_res_ciud.append(["E","...sin resultados"])
+        else:
+            if "results" not in dic_ciud.keys():
+                str_res_ciud.append(["E","-    sin resultados    - "])
+            else:
+                for c, id in zip(dic_ciud['results'], 
+                        range(len(dic_ciud['results']))):
+                    str_res_ciud.append([
+                        id,
+                        [c["name"], c["country"], 
+                        c["latitude"], c["longitude"]]
+                    ])
+        
+        return str_res_ciud
+    
+    
 # KivyMD ####################################################################
 class ScMg(MDScreenManager):
+    
+    # Screen: main
     localid = StringProperty()
     reloj = StringProperty()
     coord = StringProperty()
     a_viento = NumericProperty()
     a_viento_s= StringProperty()
-
+    
+    # Screen: eleg_loc
+    ciud_input = StringProperty()
+    lista_res = ListProperty()
+    dicc_res = DictProperty()
+    ciud_eleg = StringProperty()
     
     def __init__(self, err=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -154,7 +231,9 @@ class ScMg(MDScreenManager):
             self.cargar_dat()
             Clock.schedule_interval(self.cargar_dat,850)
 
-
+        # PROVISORIO: BORRAR ESTAS LÍNEAS AL FINAL
+        self.current = "eleg_loc"
+        # self.lista_ciud()
 
     def cargar_dat(self, *args):
         '''Toma datos de la propiedad `meteo_data` de la instancia de `MainApp`, 
@@ -200,6 +279,42 @@ class ScMg(MDScreenManager):
         '''Limpiar tarjetas'''
         self.ids.tabla.clear_widgets()
 
+    def lista_ciud(self, lista_res):
+        '''Cargar lista de ciudades en GUI.
+        
+        Parámetros
+            lista_res: lista a insertar en `MDlist.`
+        '''
+        # print(lista_res)
+        
+        self.ids.list_ciud.clear_widgets()
+        for c in lista_res:
+            self.ids.list_ciud.add_widget(
+                CiudItem(id=str(c[0]), text=str(c[1]),
+                app=self.app
+                )
+            )
+
+    def buscar_ciud(self):
+        '''
+        Consulta a API de geolocalización, y carga GUI con los resultados
+        '''
+        async def cons():
+            '''Lanzar consulta asincrónica, listado de resultados y envío a 
+            widget `MDlist`'''
+            self.dicc_res = await self.app.localid.consulta_api(self.ciud_input)            
+            self.lista_res = self.app.localid.listar_res(self.dicc_res)
+            print(self.lista_res)
+            self.lista_ciud(self.lista_res)
+        ak.start(cons())
+
+    def confirmar_ciud(self):
+        if self.ciud_eleg == "E":
+            print("Usuario hizo click en mensaje de error")
+        else:
+            print(self.ciud_eleg, "es id de ciudad elegida en json/dict")
+            
+        # En progreso...
 
 class Veleta(Screen):pass
 
@@ -220,6 +335,23 @@ class MetDat(MDCard):
 class DatTab(MDGridLayout):pass
 
 
+class CiudItem(OneLineListItem):
+    '''Ciudades encontradas por 
+    API de geo-posicionamiento, mostradas por GUI.'''
+    id = StringProperty()
+    
+    def __init__(self, id:str, app, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.app = app
+        self.id = id
+        
+    def click(self):
+        
+        # print(self.id, "CiudItem.click")
+        
+        self.app.root.ciud_eleg = self.id
+        # return super().on_touch_down(touch)
+        
 class MainApp(MDApp):
     title= "Veleta"
     
@@ -230,6 +362,7 @@ class MainApp(MDApp):
         super().__init__(**kwargs)
         self.conf = Config()
         self.con = MeteoDat(self.conf)
+        self.localid = GeoCod(self.conf)
     def build(self):
         self.theme_cls.theme_style = "Light"
         self.theme_cls.primary_palette = "Orange"
@@ -238,7 +371,7 @@ class MainApp(MDApp):
         self.meteo_data = self.con.descar_datos()
         ## Avisar de error de conexión al usuario
         if self.meteo_data["err"]:
-            self.endp = self.conf.endpoint_url()
+            self.endp = self.conf.meteo_url()
             return ScMg(err=True)
         else:
             Thread(target=Clock.schedule_interval(self.consulta_api,900),
