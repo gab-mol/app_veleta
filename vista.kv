@@ -10,7 +10,7 @@
             markup: True
             pos_hint: {'top': 1}
             size_hint: 1, .1
-            right_action_items: [["information",lambda x: banner.show()]]
+            right_action_items: [["information",lambda x: app.show()]]
         MDBanner:
             id: banner
             # Si va una sola línea no uso type
@@ -122,8 +122,6 @@
         name:"eleg_loc"
         MDBoxLayout:
             orientation: 'vertical'
-            # spacing: 10
-            # padding: [20,0,20,0]
             canvas.before:
                 Color:
                     rgb: utils.get_color_from_hex('#ff9800')
@@ -131,13 +129,11 @@
                     points:  self.center_x-280, self.center_y+110,     self.center_x+280, self.center_y+110,    self.center_x-280, self.center_y+110,       self.center_x-280, self.center_y-305,       self.center_x+280, self.center_y-305,       self.center_x+280, self.center_y+110
                     width: 5
             MDTopAppBar:
-                title: "Búsqueda de localidades    "+root.ciud_eleg
-                right_action_items: [["home",lambda x: banner.show()]]
+                title: "Búsqueda de localidades    "+root.ciud_eleg_id
+                right_action_items: [["home",lambda x: app.volver_main()]]
             MDBoxLayout:
-                # size_hint: 1,1
                 orientation: 'vertical'
                 spacing: 10
-                # padding: [15,0,15,0]
                 MDBoxLayout:
                     orientation: 'horizontal'
                     size_hint: 1, .2
@@ -147,10 +143,10 @@
                         id: ciud_resp
                         size_hint: .6, 1
                         pos_hint: {'top': .9}
-                        font_size: 50
+                        font_size: 55
                         hint_text: "Ciudad..."
                         mode: "rectangle"
-                        max_text_length: 15
+                        max_text_length: 40
                         helper_text: "Escribir"
                     MDRaisedButton:
                         pos_hint: {'top': .84}
@@ -161,7 +157,7 @@
                         md_bg_color: '#ff9800'
                         on_release: root.buscar_ciud()
                 MDBoxLayout:
-                    padding: 20
+                    padding: [25,40,25,35]
                     size_hint: 1, .8
                     ScrollView:
                         MDList:
@@ -222,8 +218,9 @@
 
 
 <CiudItem>
-    text_color: utils.get_color_from_hex('#ff9800')
     bg_color: 1,1,1,.1
+    theme_text_color: "Custom"
+    text_color: utils.get_color_from_hex('#ff9800')
     on_release: 
         root.click()
         app.root.confirmar_ciud()

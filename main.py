@@ -11,8 +11,9 @@ from kivymd.uix.gridlayout import MDGridLayout
 from kivy.properties import StringProperty, NumericProperty, DictProperty, ListProperty
 from kivymd.uix.card import MDCard
 from kivymd.uix.list import OneLineListItem
-from kivymd.uix.label import MDLabel
+from kivymd.uix.scrollview import MDScrollView
 # from kivymd.uix.dialog import MDDialog
+from kivymd.uix.list import BaseListItem
 from kivy.lang import Builder
 from kivy.clock import Clock
 import asynckivy as ak
@@ -216,7 +217,8 @@ class ScMg(MDScreenManager):
     ciud_input = StringProperty()
     lista_res = ListProperty()
     dicc_res = DictProperty()
-    ciud_eleg = StringProperty()
+    ciud_eleg_id = StringProperty()
+    ciud_eleg = StringProperty("sin_loc")
     
     def __init__(self, err=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -309,10 +311,13 @@ class ScMg(MDScreenManager):
         ak.start(cons())
 
     def confirmar_ciud(self):
-        if self.ciud_eleg == "E":
+        if self.ciud_eleg_id_id == "E":
             print("Usuario hizo click en mensaje de error")
         else:
-            print(self.ciud_eleg, "es id de ciudad elegida en json/dict")
+            print(self.ciud_eleg_id, "es id de ciudad elegida en json/dict")
+            print(self.dicc_res)
+            # print("Datos de ciudad elegida", self.dicc_res[str(self.ciud_eleg)]["name"])
+            # print(self.dicc_res[str(self.ciud_eleg_id)].keys())
             
         # En progreso...
 
@@ -333,6 +338,9 @@ class MetDat(MDCard):
     
 
 class DatTab(MDGridLayout):pass
+
+
+class ScrIm(MDScrollView):pass
 
 
 class CiudItem(OneLineListItem):
@@ -394,7 +402,10 @@ No se pueden actualizar los datos.")
     def pantalla(self,pantalla):
         self.root.current = pantalla
         
-        
+    def volver_main(self):
+        print(self.root.ciud_eleg_id)
+    
+    
 if __name__ == "__main__":
 
     MainApp().run()
