@@ -1,3 +1,4 @@
+#:import utils kivy.utils
 <ScMg>
     ciud_input: ciud_resp.text
     Screen:
@@ -118,37 +119,56 @@
             MDBoxLayout:
                 size_hint: 1, .1
     Screen:
-
-
-
         name:"eleg_loc"
         MDBoxLayout:
             orientation: 'vertical'
-            spacing: 10
+            # spacing: 10
+            # padding: [20,0,20,0]
+            canvas.before:
+                Color:
+                    rgb: utils.get_color_from_hex('#ff9800')
+                Line:
+                    points:  self.center_x-280, self.center_y+110,     self.center_x+280, self.center_y+110,    self.center_x-280, self.center_y+110,       self.center_x-280, self.center_y-305,       self.center_x+280, self.center_y-305,       self.center_x+280, self.center_y+110
+                    width: 5
             MDTopAppBar:
-                title: "Búsqueda de localidades"
+                title: "Búsqueda de localidades    "+root.ciud_eleg
+                right_action_items: [["home",lambda x: banner.show()]]
             MDBoxLayout:
-                size_hint: 1,.9
+                # size_hint: 1,1
                 orientation: 'vertical'
-                spacing: 5
-                MDTextField:
-                    id: ciud_resp
-                    size_hint: .97, .1
-                    pos_hint: {'center_x': .5,'top': .8}
-                    hint_text: "Ciudad..."
-                    mode: "rectangle"
-                    max_text_length: 15
-                    helper_text: "Escribir"
-                MDFillRoundFlatButton:
-                    pos_hint: {'center_x': .5}
-                    size_hint: .5, .1
-                    text: "Buscar"
-                    custom_color: "white"
-                    on_release: root.buscar_ciud()
-                ScrollView:
+                spacing: 10
+                # padding: [15,0,15,0]
+                MDBoxLayout:
+                    orientation: 'horizontal'
+                    size_hint: 1, .2
+                    padding: [15,0,15,0]
+                    spacing: 8
+                    MDTextField:
+                        id: ciud_resp
+                        size_hint: .6, 1
+                        pos_hint: {'top': .9}
+                        font_size: 50
+                        hint_text: "Ciudad..."
+                        mode: "rectangle"
+                        max_text_length: 15
+                        helper_text: "Escribir"
+                    MDRaisedButton:
+                        pos_hint: {'top': .84}
+                        size_hint: .4, .94
+                        text: "Buscar"
+                        font_size: 30
+                        bold: True
+                        md_bg_color: '#ff9800'
+                        on_release: root.buscar_ciud()
+                MDBoxLayout:
+                    padding: 20
                     size_hint: 1, .8
-                    MDList:
-                        id: list_ciud            
+                    ScrollView:
+                        MDList:
+                            id: list_ciud
+                            bg_color: 1,1,1,.1
+                            text_color: utils.get_color_from_hex('#ff9800')
+                     
     Screen:
         name: "conex_err"
         MDBoxLayout:
@@ -202,6 +222,8 @@
 
 
 <CiudItem>
+    text_color: utils.get_color_from_hex('#ff9800')
+    bg_color: 1,1,1,.1
     on_release: 
         root.click()
         app.root.confirmar_ciud()
