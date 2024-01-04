@@ -8,18 +8,13 @@ from kivymd.uix.screenmanager import MDScreenManager
 from kivymd.uix.screen import Screen
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.gridlayout import MDGridLayout
-from kivy.properties import StringProperty, NumericProperty, DictProperty, ListProperty
+from kivy.properties import StringProperty, BooleanProperty, NumericProperty, DictProperty, ListProperty
 from kivymd.uix.card import MDCard
 from kivymd.uix.list import OneLineListItem
 from kivymd.uix.scrollview import MDScrollView
-# from kivymd.uix.dialog import MDDialog
-from kivymd.uix.list import BaseListItem
 from kivy.lang import Builder
 from kivy.clock import Clock
 import asynckivy as ak
-
-
-import multitasking
 
 import os
 import configparser as confp
@@ -33,23 +28,96 @@ from pprint import pprint
 Builder.load_file("vista.kv")
 # Extracción de datos Meteorológicos ########################################
 class Config:
-    '''Cargar archivo de configuración.'''
+    '''Administra archivo de configuración.'''
     def __init__(self) -> None:
         DIR = os.getcwd()
+        self.CFG_R = os.path.join(DIR, "config.ini")
         self.cfg = confp.ConfigParser()
-        self.cfg.read(os.path.join(DIR, "config.ini"))
+        self.cfg.read(os.path.join(DIR, self.CFG_R))
+
+    def cargar_loc(self) -> list:
+        '''
+        Lee del archivo de configuración nombre, latitud y longitud.
+
+        ### return
+            - Si las variables contienen "None" -> `[False, None]`  
+                ("Sin conf", datos vacios)
+            - Si las variables contienen datos > `[True, dict]`  
+                ("Con conf", diccionario con nombre, latitud y longitud).
+        '''
+        url = self.cfg["endpoint"]["openmeteo"]
+        loc_cfg = self.cfg["configvars"]
+        nom, lat = loc_cfg["nombre"], loc_cfg["latitud"]
+        long = loc_cfg["longitud"]
+        
+        if nom == "None" or lat == "None" or long == "None" or url == "None":
+            print("\nNo se ha seleccionado localidad.\n")
+            return [False, None]
+        else:
+            print(f"\nCiudad guardada: {nom}\n\
+                Se hace pedido dedatos para esta.")
+            return [True, {"nom":nom,"lat":lat,"long":long}]
+    
+    def meteo_url_set_coord(self, lat:str, long:str):
+        '''
+        Guardar URL con la latitud y longitud de la 
+        localidad seleccionada.
+        
+        ### Parámetros
+            - lat: latitud `str(float)` 
+            - long: longitud `str(float)`
+        '''
+        url = [
+            self.cfg["endpoint"]["openmeteo_set"],
+            f"latitude={lat}&longitude={long}",
+            self.cfg["endpoint"]["arg_curr"],
+            self.cfg["endpoint"]["arg_hor"]
+        ]
+        
+        self.cfg["endpoint"]["openmeteo"] = "".join(url)
+        
+        with open(self.CFG_R, "w") as cfg_ar:
+            self.cfg.write(cfg_ar)
 
     def meteo_url(self):
-        return self.cfg["endpoint"]["origdata"]
+        '''Obtener URL (endpoint API open-meteo) del archivo de configuración.'''
+        return self.cfg["endpoint"]["openmeteo"]
 
     def loc_url(self):
-        return self.cfg["endpoint"]["localidad"]  
-
+        '''Obtener URL (endpoint geocoding-API open-meteo) del archivo de configuración.'''
+        return self.cfg["endpoint"]["localidad"]
+    
+    def guardar_loc(self, nombre:str, lat:str, log:str):
+        '''
+        Guarda coordenadas y nombre de la localidad elegida.
+        
+        ### Parámetros
+            - nombre: nombre de la ciudad.
+            - lat: latitud `str(float)`
+            - log: longitud `str(float)`
+        '''
+        
+        self.cfg["configvars"] = {
+            "nombre":nombre,
+            "latitud":lat,
+            "longitud":log
+        }
+        
+        with open(self.CFG_R, "w") as cfg_ar:
+            self.cfg.write(cfg_ar)
+            
+            
 class MeteoDat:
-    '''Conexión con API y extracción'''
+    '''
+    Conexión con API, extracción y formateo.
+    '''
     def __init__(self, conf:Config) -> None:
+        '''
+        Parámetros
+            - conf: Instancia de clase administradora \
+                de archivo de configuración `Config`.
+        '''
         self.cfgp = conf
-        self.url = self.cfgp.meteo_url()
 
     def descar_datos(self) -> dict:
         '''
@@ -58,8 +126,10 @@ class MeteoDat:
         return: diccionario con los datos meteorológicos.
         '''
         print("Haciendo consulta")
+        url = self.cfgp.meteo_url()
+        
         try:
-            with requests.get(self.url) as req:
+            with requests.get(url) as req:
                 respuesta = req.json()
                 respuesta["err"] = False
             return respuesta
@@ -115,7 +185,7 @@ class MeteoDat:
         Obtiene la fila del Datafreme de condiciones predichas por horas,
         la correspondiente a la cantidad indicada de horas a futuro.
 
-        ## Parametros
+        ## Parámetros
             predicc: elemento 'hourly' de la respuesta de API, \
 convertido a pandas.Dataframe.
             h_prec: número de horas futuras sumadas a la actual.
@@ -143,7 +213,8 @@ class GeoCod:
     def __init__(self, config:Config):
         '''
         Parámetros
-            config: instancia de clase de configuración.
+            config: Instancia de clase administradora \
+                de archivo de configuración `Config`.
         '''
         self.config = config
         self.endp = self.config.loc_url()
@@ -218,24 +289,46 @@ class ScMg(MDScreenManager):
     lista_res = ListProperty()
     dicc_res = DictProperty()
     ciud_eleg_id = StringProperty()
-    ciud_eleg = StringProperty("sin_loc")
+    ciud_eleg = DictProperty({"name":"None"})
     
     def __init__(self, err=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.app = MainApp.get_running_app()
-
+        print("con_loc:", self.app.con_loc)
+        if self.app.con_loc:
+            self.meteo_data = self.app.con.descar_datos()
+            if self.meteo_data["err"]:
+                self.endp = self.conf.meteo_url()
+                self.root.current = "conex_err"
+            else:
+                self.app.consulta_api()
+                Thread(target=Clock.schedule_interval(self.app.consulta_api,900),
+                    daemon=True).start()            
+                self.cargar_dat()
+                Clock.schedule_interval(self.cargar_dat, 850)
+                self.current = "main"
+        else:
+            self.current = "eleg_loc"
+    
+    # def ini_main(self):
+    #     '''
+    #     Carga datos en GUI (Screen id: "main") 
+    #     e inicia reloj de actualización.
+    #     '''
         
-        if err:
-        # Si ocurre error de conexión    
-            self.current = "conex_err" 
-        else:  
-            # Bucle de actualización de GUI
-            self.cargar_dat()
-            Clock.schedule_interval(self.cargar_dat,850)
-
-        # PROVISORIO: BORRAR ESTAS LÍNEAS AL FINAL
-        self.current = "eleg_loc"
-        # self.lista_ciud()
+    #     # Descargar datos y lanzar hilo de actualización cada 900s
+    #     self.meteo_data = self.con.descar_datos()
+        
+    #     #    Avisar de error de conexión al usuario
+    #     if self.meteo_data["err"]:
+    #         self.endp = self.conf.meteo_url()
+    #         self.root.current = "conex_err"
+    #     else:
+    #         Thread(target=Clock.schedule_interval(self.consulta_api,900),
+    #             daemon=True).start()
+    #         # self.root.cargar_dat()
+    #         # Clock.schedule_interval(self.cargar_dat,850)
+    #         # self.current = "main"
 
     def cargar_dat(self, *args):
         '''Toma datos de la propiedad `meteo_data` de la instancia de `MainApp`, 
@@ -245,6 +338,7 @@ class ScMg(MDScreenManager):
         print("\Cargando GUI con datos...\n")
         
         # Recuperar datos desde app
+        print("self.meteo_data", self.app.meteo_data)
         cond_ahora = self.app.meteo_data["current"]
         cond_pred = self.app.meteo_data["hourly"]
         
@@ -256,7 +350,7 @@ class ScMg(MDScreenManager):
         lat = self.app.meteo_data["latitude"]
         lon = self.app.meteo_data["longitude"]
         
-        self.localid = "<proximamente>"
+        self.localid = self.app.conf.cfg["configvars"]["nombre"]
         self.a_viento = direc
         self.a_viento_s = str(direc)              
         self.reloj = time.strftime(f"%H:%M hs. del %d/%m/%y")
@@ -306,18 +400,32 @@ class ScMg(MDScreenManager):
             widget `MDlist`'''
             self.dicc_res = await self.app.localid.consulta_api(self.ciud_input)            
             self.lista_res = self.app.localid.listar_res(self.dicc_res)
-            print(self.lista_res)
+            # print(self.lista_res)
             self.lista_ciud(self.lista_res)
         ak.start(cons())
 
     def confirmar_ciud(self):
-        if self.ciud_eleg_id_id == "E":
+        if self.ciud_eleg_id == "E":
             print("Usuario hizo click en mensaje de error")
         else:
-            print(self.ciud_eleg_id, "es id de ciudad elegida en json/dict")
-            print(self.dicc_res)
-            # print("Datos de ciudad elegida", self.dicc_res[str(self.ciud_eleg)]["name"])
-            # print(self.dicc_res[str(self.ciud_eleg_id)].keys())
+            loc_eleg = self.dicc_res["results"][int(self.ciud_eleg_id)]
+            print(loc_eleg["name"], "es id de ciudad elegida en json/dict")
+            lat = loc_eleg["latitude"]
+            long = loc_eleg["longitude"]
+            # Guardado de Ciudad y coord.
+            self.app.conf.guardar_loc(
+                loc_eleg["name"], 
+                lat, 
+                long
+            )
+            self.app.conf.meteo_url_set_coord(
+                lat=lat, long=long
+            )
+            # Se eligió localidad
+            self.app.con_loc = True
+            
+            print("ejecutando self.app.consulta_api")
+            self.app.consulta_api()
             
         # En progreso...
 
@@ -357,7 +465,7 @@ class CiudItem(OneLineListItem):
         
         # print(self.id, "CiudItem.click")
         
-        self.app.root.ciud_eleg = self.id
+        self.app.root.ciud_eleg_id = self.id
         # return super().on_touch_down(touch)
         
 class MainApp(MDApp):
@@ -365,27 +473,34 @@ class MainApp(MDApp):
     
     meteo_data = DictProperty()
     endp = StringProperty()
-
+    conf_carg = ListProperty()
+    
+    # False: no se guardó localidad de referencia 
+    # True: hay localidad de referencia guardada
+    con_loc = BooleanProperty()
+    
+    # error de conexión
+    conex_err = BooleanProperty()
+    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        
+        # Instanciación de objeto de configuración, verif/seteo
         self.conf = Config()
-        self.con = MeteoDat(self.conf)
+        self.conf_carg = self.conf.cargar_loc()
+        
+        #  localidad seteada? True/False
+        print("inició. Datos:::",self.con_loc)
+        self.con_loc = self.conf_carg[0]
+        
         self.localid = GeoCod(self.conf)
+        self.con = MeteoDat(self.conf)
+        
     def build(self):
         self.theme_cls.theme_style = "Light"
         self.theme_cls.primary_palette = "Orange"
         
-        # Descargar datos y lanzar hilo de actualización cada 900s
-        self.meteo_data = self.con.descar_datos()
-        ## Avisar de error de conexión al usuario
-        if self.meteo_data["err"]:
-            self.endp = self.conf.meteo_url()
-            return ScMg(err=True)
-        else:
-            Thread(target=Clock.schedule_interval(self.consulta_api,900),
-                daemon=True).start()
-            
-            return ScMg()
+        return ScMg()
     
     def consulta_api(self, *args):
         '''
@@ -403,6 +518,9 @@ No se pueden actualizar los datos.")
         self.root.current = pantalla
         
     def volver_main(self):
+        if self.con_loc:
+            
+            self.pantalla("main")
         print(self.root.ciud_eleg_id)
     
     
