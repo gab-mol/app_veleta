@@ -12,8 +12,8 @@
                     points:  self.center_x-280, self.center_y+110,     self.center_x+280, self.center_y+110,    self.center_x-280, self.center_y+110,       self.center_x-280, self.center_y-305,       self.center_x+280, self.center_y-305,       self.center_x+280, self.center_y+110
                     width: 5
             MDTopAppBar:
-                title: "Búsqueda de localidades    "+root.ciud_eleg_id
-                right_action_items: [["home",lambda x: app.volver_main()]]
+                title: "Búsqueda de localidades"
+                right_action_items: [["weather-windy",lambda x: app.volver_main()]]
             MDBoxLayout:
                 orientation: 'vertical'
                 spacing: 10
@@ -56,17 +56,18 @@
             markup: True
             pos_hint: {'top': 1}
             size_hint: 1, .1
-            right_action_items: [["information",lambda x: banner.show()]]
+            right_action_items: 
+                [
+                ["information-outline",lambda x: banner.show()],
+                ["home-city-outline",lambda x: app.pantalla("eleg_loc")]
+                ]
         MDBanner:
             id: banner
             # Si va una sola línea no uso type
             #type: "two-line"  # Si van dos líneas
             type: "two-line"
-            text: ["Data de: "+root.reloj, "Para coord.: "+root.coord]
-            left_action: ["Localidad", lambda x: app.pantalla("eleg_loc")]
-            right_action: ["CLOSE", lambda x: None]
+            text: ["Corresponde a las: "+root.reloj, "Coordenadas: "+root.coord]
             over_widget: meteo
-            height: 10
             vertical_pad: topb.height
         MDBoxLayout:
             id: meteo
@@ -224,3 +225,4 @@
         root.click()
         app.root.confirmar_ciud()
         app.root.cargar_dat()
+        app.root.current = "main"

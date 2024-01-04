@@ -1,6 +1,6 @@
 from kivy.config import Config
 ## Configuración de dimensiones de ventana
-# Config.set('graphics', 'resizable', '0') 
+Config.set('graphics', 'resizable', '0') 
 Config.set('graphics', 'width', '600')
 Config.set('graphics', 'height', '660')
 from kivymd.app import MDApp
@@ -87,7 +87,7 @@ class Config:
         '''Obtener URL (endpoint geocoding-API open-meteo) del archivo de configuración.'''
         return self.cfg["endpoint"]["localidad"]
     
-    def guardar_loc(self, nombre:str, lat:str, log:str):
+    def guardar_loc(self, nombre:str, lat:str, log:str, pais:str):
         '''
         Guarda coordenadas y nombre de la localidad elegida.
         
@@ -95,12 +95,14 @@ class Config:
             - nombre: nombre de la ciudad.
             - lat: latitud `str(float)`
             - log: longitud `str(float)`
+            - pais: nombre del país
         '''
         
         self.cfg["configvars"] = {
             "nombre":nombre,
             "latitud":lat,
-            "longitud":log
+            "longitud":log,
+            "pais":pais
         }
         
         with open(self.CFG_R, "w") as cfg_ar:
@@ -349,8 +351,10 @@ class ScMg(MDScreenManager):
         time = time - pd.Timedelta(hours=3) # GMT-0 a GMT-3
         lat = self.app.meteo_data["latitude"]
         lon = self.app.meteo_data["longitude"]
+        nom = self.app.conf.cfg["configvars"]["nombre"]
+        pais = self.app.conf.cfg["configvars"]["pais"]
         
-        self.localid = self.app.conf.cfg["configvars"]["nombre"]
+        self.localid = f'{nom}, {pais}'
         self.a_viento = direc
         self.a_viento_s = str(direc)              
         self.reloj = time.strftime(f"%H:%M hs. del %d/%m/%y")
@@ -386,7 +390,8 @@ class ScMg(MDScreenManager):
         self.ids.list_ciud.clear_widgets()
         for c in lista_res:
             self.ids.list_ciud.add_widget(
-                CiudItem(id=str(c[0]), text=str(c[1]),
+                CiudItem(id=str(c[0]), 
+                    text=f"{c[1][0]}, {c[1][1]} ({c[1][2]}, {c[1][3]})",
                 app=self.app
                 )
             )
@@ -416,7 +421,8 @@ class ScMg(MDScreenManager):
             self.app.conf.guardar_loc(
                 loc_eleg["name"], 
                 lat, 
-                long
+                long,
+                loc_eleg["country"]
             )
             self.app.conf.meteo_url_set_coord(
                 lat=lat, long=long
