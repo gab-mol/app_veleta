@@ -388,6 +388,9 @@ class ScMg(MDScreenManager):
         )
         
         df = prob_ll_l[0]
+        if self.app.h_ll > prob_ll_l[2]:
+            self.app.h_ll = 1         
+        
         hf = hora_futura(self.app.h_ll, str=True)        
         
         prob_ll = str(list(
@@ -395,11 +398,6 @@ class ScMg(MDScreenManager):
             )[0]
         )
         
-        len(list(df["time"]))
-        
-        if self.app.h_ll > prob_ll_l[2]-1:
-            self.app.h_ll = 1 
-            
         self.prob_ll = f"{prob_ll} %"
         print("\nClave", hf,"!!! VALOR:\n",self.prob_ll)
         
