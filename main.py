@@ -8,9 +8,11 @@ from kivymd.uix.screenmanager import MDScreenManager
 from kivymd.uix.screen import Screen
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.gridlayout import MDGridLayout
-from kivy.properties import StringProperty, BooleanProperty, NumericProperty, DictProperty, ListProperty
+from kivy.properties import StringProperty, BooleanProperty, NumericProperty
+from kivy.properties import DictProperty, ListProperty, ObjectProperty
 from kivymd.uix.card import MDCard
 from kivymd.uix.list import OneLineListItem
+from kivymd.uix.button import MDIconButton
 from kivymd.uix.scrollview import MDScrollView
 from kivy.lang import Builder
 from kivy.clock import Clock
@@ -27,6 +29,11 @@ from pprint import pprint
 
 Builder.load_file("vista.kv")
 # Extracción de datos Meteorológicos ########################################
+def hora_futura(fh, str=False):
+    ts = datetime.now() + timedelta(hours=fh)
+    return ts.strftime('%H') if str else int(ts.strftime('%H'))
+
+
 class Config:
     '''Administra archivo de configuración.'''
     def __init__(self) -> None:
@@ -182,30 +189,40 @@ class MeteoDat:
             return "NNO"
 
     @staticmethod
-    def prob_prec(predicc:pd.DataFrame, h_prec:int) -> np.int64:
+    def prob_prec(predicc:pd.DataFrame, h_prec:int) -> list:
         '''
         Obtiene la fila del Datafreme de condiciones predichas por horas,
         la correspondiente a la cantidad indicada de horas a futuro.
 
-        ## Parámetros
+        ### Parámetros
             predicc: elemento 'hourly' de la respuesta de API, \
 convertido a pandas.Dataframe.
             h_prec: número de horas futuras sumadas a la actual.
 
-        ## Return
-            Valor de probablilidad de precipitaciones para hora futura.
+        ### Return
+            - `list`
+                - [0] `pandas.Dataframe` Valor de probablilidad de precipitaciones para las horad futura
+                del mismo día.
+                - [1] `str` con hora actual de referencia (hs)
         '''
 
         # Hora futura deseada
-        ts = datetime.now() + timedelta(hours=h_prec)
-        ts_h = ts.strftime('%H')
-        
+        # ts = datetime.now() + timedelta(hours=h_prec)
+        # ts_h = ts.strftime('%H')
+        ts_h = hora_futura(h_prec, str=True)
         # convertir columna a timestamp, y luego a str solo con la hora
         predicc['time'] = pd.to_datetime(predicc['time']).dt.strftime('%H')
-        fila_predicc = predicc.loc[predicc['time'] == ts_h]
-
+        
+       
+        # print("Horas predicciones:\n",predicc['time'],"\n", list(predicc['time']))
+        h_futuras_hoy = [hs for hs in list(predicc['time']) if hs >= ts_h]
+        print("\nHoras restantes: ",h_futuras_hoy)
+        
+        fila_predicc = predicc.loc[predicc['time'] >= ts_h]
+        print(fila_predicc)
+        
         # Retornar valor
-        return fila_predicc["precipitation_probability"].iloc[0]
+        return [fila_predicc[["time","precipitation_probability"]], ts_h]
 
 
 class GeoCod:
@@ -283,8 +300,15 @@ class ScMg(MDScreenManager):
     localid = StringProperty()
     reloj = StringProperty()
     coord = StringProperty()
+    #    veleta 
     a_viento = NumericProperty()
     a_viento_s= StringProperty()
+    #   tarjetas
+    prob_ll = StringProperty()
+    veloc = StringProperty()
+    direc_s = StringProperty()
+    temp= StringProperty()
+    
     
     # Screen: eleg_loc
     ciud_input = StringProperty()
@@ -305,80 +329,94 @@ class ScMg(MDScreenManager):
             else:
                 self.app.consulta_api()
                 Thread(target=Clock.schedule_interval(self.app.consulta_api,900),
-                    daemon=True).start()            
-                self.cargar_dat()
-                Clock.schedule_interval(self.cargar_dat, 850)
+                    daemon=True).start()
+                
+                # Barra info
+                lat = self.app.meteo_data["latitude"]
+                lon = self.app.meteo_data["longitude"]
+                nom = self.app.conf.cfg["configvars"]["nombre"]
+                pais = self.app.conf.cfg["configvars"]["pais"]
+                
+                self.localid = f'{nom}, {pais}'
+                self.coord = f"Latitud: {lat}, Longitud: {lon}"       
+                
+                # lanzar actualización
+                self.cargar_dat_act()
+                Clock.schedule_interval(self.cargar_dat_act, 850)
                 self.current = "main"
         else:
             self.current = "eleg_loc"
-    
-    # def ini_main(self):
-    #     '''
-    #     Carga datos en GUI (Screen id: "main") 
-    #     e inicia reloj de actualización.
-    #     '''
-        
-    #     # Descargar datos y lanzar hilo de actualización cada 900s
-    #     self.meteo_data = self.con.descar_datos()
-        
-    #     #    Avisar de error de conexión al usuario
-    #     if self.meteo_data["err"]:
-    #         self.endp = self.conf.meteo_url()
-    #         self.root.current = "conex_err"
-    #     else:
-    #         Thread(target=Clock.schedule_interval(self.consulta_api,900),
-    #             daemon=True).start()
-    #         # self.root.cargar_dat()
-    #         # Clock.schedule_interval(self.cargar_dat,850)
-    #         # self.current = "main"
 
-    def cargar_dat(self, *args):
+    def cargar_dat_act(self, *args):
         '''Toma datos de la propiedad `meteo_data` de la instancia de `MainApp`, 
-        y actualiza la GUI.
+        y actualiza la GUI para los datos de condiciones actuales.
         Pensada para ejecutarse regularmente con `kivy.clock.Clock`.
         '''
         print("\Cargando GUI con datos...\n")
+        cond_ahora = self.app.meteo_data["current"]
         
         # Recuperar datos desde app
-        print("self.meteo_data", self.app.meteo_data)
-        cond_ahora = self.app.meteo_data["current"]
-        cond_pred = self.app.meteo_data["hourly"]
+        # cond_pred = self.app.meteo_data["hourly"]
         
         direc = cond_ahora["wind_direction_10m"]
-        
-        # Barra info
         time = pd.to_datetime(cond_ahora["time"])
         time = time - pd.Timedelta(hours=3) # GMT-0 a GMT-3
-        lat = self.app.meteo_data["latitude"]
-        lon = self.app.meteo_data["longitude"]
-        nom = self.app.conf.cfg["configvars"]["nombre"]
-        pais = self.app.conf.cfg["configvars"]["pais"]
+        self.reloj = time.strftime(f"%H:%M hs. del %d/%m/%y")   
         
-        self.localid = f'{nom}, {pais}'
+        # veleta
         self.a_viento = direc
         self.a_viento_s = str(direc)              
-        self.reloj = time.strftime(f"%H:%M hs. del %d/%m/%y")
-        self.coord = f"Latitud: {lat}, Longitud: {lon}"
-        # Tarjetas   
-        prob_ll = "   "+str(MeteoDat.prob_prec(
-            pd.DataFrame(cond_pred), 
-            h_prec= 1))+" %"
-        veloc = str(cond_ahora["wind_speed_10m"])+" km/h"
-        direc_s  = "   "+MeteoDat.a_cardinales(direc)
-        temp = str(cond_ahora["temperature_2m"])+" °C"
 
+        # Tarjetas condiciones actuales
+        self.veloc = str(cond_ahora["wind_speed_10m"])+" km/h"
+        self.direc_s  = "   "+MeteoDat.a_cardinales(direc)
+        self.temp = str(cond_ahora["temperature_2m"])+" °C"
+        
+        # actualizar tarjetas
+        self.probab_ll()
+        self.recarg_tj()
+
+    def probab_ll(self, recargar=False, *args):
+        print("probab_ll()")
+        cond_pred = self.app.meteo_data["hourly"]
+        prob_ll_l = MeteoDat.prob_prec(
+            pd.DataFrame(cond_pred), 
+            h_prec= self.app.h_ll
+        )
+        
+        hf = hora_futura(self.app.h_ll, str=True)
+        
+        df = prob_ll_l[0]
+        prob_ll = str(list(
+            df[df["time"] == hf]["precipitation_probability"]
+            )[0]
+        )
+        self.prob_ll = f"{prob_ll} %"
+        print("\nClave", hf,"!!! VALOR:\n",self.prob_ll)
+        # actualizar propiedad 
+        if recargar:
+            self.recarg_tj()
+        
+    def recarg_tj(self):
         ## Recargar datos de tarjetas
         self.limp_tarj()
-        for tit, dat, col in zip(["Precipitaciones en 1 h ","Velocidad del viento ",
+        print("ESTO TIENE QUE SER:", self.prob_ll)
+        self.ids.tabla.add_widget(
+            MetDat(tit=f"Precipitaciones en {self.app.h_ll} h ", 
+                    dat=self.prob_ll, col="#76C7E8", boton=True)
+        )
+            
+        for tit, dat, col in zip(["Velocidad del viento ",
                                   "Viento desde ","Temperatura "],
-                                [prob_ll, veloc, direc_s, temp],
-                                ["#76C7E8", "#99E876", "#B3E876", "#E89090"]):
+                                [self.veloc, self.direc_s, self.temp],
+                                ["#99E876", "#B3E876", "#E89090"]):
             self.ids.tabla.add_widget(MetDat(tit=tit, dat=dat, col=col))
             
     def limp_tarj(self):
         '''Limpiar tarjetas'''
         self.ids.tabla.clear_widgets()
 
+    # Métodos Screen: eleg_loc              ######
     def lista_ciud(self, lista_res):
         '''Cargar lista de ciudades en GUI.
         
@@ -435,22 +473,41 @@ class ScMg(MDScreenManager):
             
         # En progreso...
 
-class Veleta(Screen):pass
-
 
 class MetDat(MDCard):
     tit = StringProperty()
     dat = StringProperty()
     col = StringProperty()
     
-    def __init__(self, tit:str, dat:str, col:str,
+    def __init__(self, tit:str, dat:str, col:str, boton=False,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.app = MainApp.get_running_app()
         self.tit = tit
         self.dat = dat
         self.md_bg_color = col
+        
+        if boton:
+            
+            self.add_widget(
+                MDIconButton(
+                    size_hint= (None,None,),
+                    pos_hint= {'top': 1, 'right':0},
+                    icon= "clock",
+                    on_press=self.precip_prob,
+                    text=f"[b]+ {self.app.h_ll} h[/b]" #self.bot_prec_prop
+                    # line_width= 2,
+                    # theme_text_color= "Custom",
+                    # text_color="#000000"
+                )
+            )
     
-
+    def precip_prob(self, *args):
+        self.app.h_ll += 1
+        print(self.app.h_ll)
+        self.app.root.probab_ll(recargar=True)
+        
+        
 class DatTab(MDGridLayout):pass
 
 
@@ -487,6 +544,10 @@ class MainApp(MDApp):
     
     # error de conexión
     conex_err = BooleanProperty()
+    
+    
+    h_ll = NumericProperty(1)
+    datetime.now().strftime('%H')
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -528,8 +589,7 @@ No se pueden actualizar los datos.")
             
             self.pantalla("main")
         print(self.root.ciud_eleg_id)
-    
-    
+        
 if __name__ == "__main__":
 
     MainApp().run()

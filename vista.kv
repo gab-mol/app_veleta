@@ -206,7 +206,7 @@
 
         MDLabel:
             size_hint: .4, 1
-            text: " [b]"+root.dat+"[/b]"
+            text: "[b]"+root.dat+"[/b]"
             markup: True
             font_size: 20
             halign: "left"
@@ -224,5 +224,5 @@
     on_release: 
         root.click()
         app.root.confirmar_ciud()
-        app.root.cargar_dat()
+        app.root.cargar_dat_act()
         app.root.current = "main"
