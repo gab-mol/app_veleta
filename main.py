@@ -204,25 +204,28 @@ convertido a pandas.Dataframe.
                 - [0] `pandas.Dataframe` Valor de probablilidad de precipitaciones para las horad futura
                 del mismo día.
                 - [1] `str` con hora actual de referencia (hs)
+                - [2] `int` n° horas futuras hoy
         '''
 
         # Hora futura deseada
         # ts = datetime.now() + timedelta(hours=h_prec)
         # ts_h = ts.strftime('%H')
-        ts_h = hora_futura(h_prec, str=True)
+        ts_h = hora_futura(0, str=True)
         # convertir columna a timestamp, y luego a str solo con la hora
         predicc['time'] = pd.to_datetime(predicc['time']).dt.strftime('%H')
         
        
         # print("Horas predicciones:\n",predicc['time'],"\n", list(predicc['time']))
-        h_futuras_hoy = [hs for hs in list(predicc['time']) if hs >= ts_h]
+        h_futuras_hoy = [hs for hs in list(predicc['time']) if hs > ts_h]
         print("\nHoras restantes: ",h_futuras_hoy)
         
         fila_predicc = predicc.loc[predicc['time'] >= ts_h]
         print(fila_predicc)
         
+        # valor max
+        
         # Retornar valor
-        return [fila_predicc[["time","precipitation_probability"]], ts_h]
+        return [fila_predicc[["time","precipitation_probability"]], ts_h, len(h_futuras_hoy)]
 
 
 class GeoCod:
@@ -384,15 +387,23 @@ class ScMg(MDScreenManager):
             h_prec= self.app.h_ll
         )
         
-        hf = hora_futura(self.app.h_ll, str=True)
-        
         df = prob_ll_l[0]
+        hf = hora_futura(self.app.h_ll, str=True)        
+        
         prob_ll = str(list(
             df[df["time"] == hf]["precipitation_probability"]
             )[0]
         )
+        
+        len(list(df["time"]))
+        
+        if self.app.h_ll > prob_ll_l[2]-1:
+            self.app.h_ll = 1 
+            
         self.prob_ll = f"{prob_ll} %"
         print("\nClave", hf,"!!! VALOR:\n",self.prob_ll)
+        
+        
         # actualizar propiedad 
         if recargar:
             self.recarg_tj()
@@ -545,10 +556,9 @@ class MainApp(MDApp):
     # error de conexión
     conex_err = BooleanProperty()
     
-    
+    # hora futura para predicción de lluvia
     h_ll = NumericProperty(1)
-    datetime.now().strftime('%H')
-    
+        
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
