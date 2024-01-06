@@ -63,12 +63,11 @@
                 ]
         MDBanner:
             id: banner
-            # Si va una sola línea no uso type
-            #type: "two-line"  # Si van dos líneas
             type: "two-line"
             text: ["Corresponde a las: "+root.reloj, "Coordenadas: "+root.coord]
             over_widget: meteo
             vertical_pad: topb.height
+            right_action: ["Sobre App.", lambda x: app.vent_info()]
         MDBoxLayout:
             id: meteo
             orientation: 'vertical'
@@ -164,7 +163,12 @@
                     canvas.after:
                         PopMatrix
             MDBoxLayout:
-                size_hint: 1, .1         
+                size_hint: 1, .1 
+                MDLabel:
+                    pos_hint: {'right': 1.0,'top': 0.12}
+                    font_size: 15
+                    text: "V.: "+root.vrs
+                    halign:"right"
     Screen:
         name: "conex_err"
         MDBoxLayout:
@@ -197,10 +201,8 @@
 
 <MetDat@MDCard>
     MDRelativeLayout:
-        # orientation: 'horizontal'
         MDLabel:
             pos_hint: {'center_x': root.x_pos1,'center_y': 0.5}
-            # size_hint: .6, 1
             text: root.tit+":"
             font_size: 20
             halign: "center"
@@ -209,7 +211,6 @@
 
         MDLabel:
             pos_hint: {'center_x': root.x_pos2,'center_y': 0.5}
-            # size_hint: .4, 1
             text: "[b]"+root.dat+"[/b]"
             markup: True
             font_size: 23

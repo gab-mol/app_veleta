@@ -12,11 +12,12 @@ from kivy.properties import StringProperty, BooleanProperty, NumericProperty
 from kivy.properties import DictProperty, ListProperty, ObjectProperty
 from kivymd.uix.card import MDCard
 from kivymd.uix.list import OneLineListItem
-from kivymd.uix.button import MDIconButton
+from kivymd.uix.button import MDIconButton, MDFlatButton
 from kivymd.uix.scrollview import MDScrollView
 from kivy.lang import Builder
 from kivy.clock import Clock
 import asynckivy as ak
+from kivymd.uix.dialog import MDDialog
 
 import os
 import configparser as confp
@@ -26,6 +27,8 @@ import numpy as np
 from datetime import datetime, timedelta
 from threading import Thread
 from pprint import pprint
+
+__version__ = "Beta"
 
 Builder.load_file("vista.kv")
 # Extracción de datos Meteorológicos ########################################
@@ -211,21 +214,15 @@ convertido a pandas.Dataframe.
         '''
 
         # Hora futura deseada
-        # ts = datetime.now() + timedelta(hours=h_prec)
-        # ts_h = ts.strftime('%H')
         ts_h = hora_futura(0, str=True)
         # convertir columna a timestamp, y luego a str solo con la hora
         predicc['time'] = pd.to_datetime(predicc['time']).dt.strftime('%H')
-        
        
-        # print("Horas predicciones:\n",predicc['time'],"\n", list(predicc['time']))
         h_futuras_hoy = [hs for hs in list(predicc['time']) if hs > ts_h]
         print("\nHoras restantes: ",h_futuras_hoy)
         
         fila_predicc = predicc.loc[predicc['time'] >= ts_h]
         print(fila_predicc)
-        
-        # valor max
         
         # Retornar valor
         return [fila_predicc[["time","precipitation_probability"]], ts_h, len(h_futuras_hoy)]
@@ -269,7 +266,6 @@ class GeoCod:
         except:
             print("\nERROR requests")
             return {"err":True}
-            #raise Exception("Error de conexión: Geocoding API")
         
     def listar_res(self, dic_ciud:dict) -> list:
         '''
@@ -306,6 +302,8 @@ class ScMg(MDScreenManager):
     localid = StringProperty()
     reloj = StringProperty()
     coord = StringProperty()
+    vrs = StringProperty()
+    
     #    veleta 
     a_viento = NumericProperty()
     a_viento_s= StringProperty()
@@ -321,11 +319,11 @@ class ScMg(MDScreenManager):
     lista_res = ListProperty()
     dicc_res = DictProperty()
     ciud_eleg_id = StringProperty()
-    # ciud_eleg = DictProperty({"name":"None"})
     
     def __init__(self, err=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.app = MainApp.get_running_app()
+        self.vrs = self.app.conf.cfg["info"]["version"]
         print("con_loc:", self.app.con_loc)
         if self.app.con_loc:
             self.meteo_data = self.app.con.descar_datos()
@@ -367,8 +365,6 @@ class ScMg(MDScreenManager):
         cond_ahora = self.app.meteo_data["current"]
         
         # Recuperar datos desde app
-        # cond_pred = self.app.meteo_data["hourly"]
-        
         direc = cond_ahora["wind_direction_10m"]
         time = pd.to_datetime(cond_ahora["time"])
         time = time - pd.Timedelta(hours=3) # GMT-0 a GMT-3
@@ -415,9 +411,9 @@ class ScMg(MDScreenManager):
             self.recarg_tj()
         
     def recarg_tj(self):
+        '''Actualizar tarjetas de condiciones meteorológicas.'''
         ## Recargar datos de tarjetas
         self.limp_tarj()
-        # print("ESTO TIENE QUE SER:", self.prob_ll)
         if self.app.h_ll == 1:
             h = "h"
         else:
@@ -434,7 +430,7 @@ class ScMg(MDScreenManager):
             self.ids.tabla.add_widget(MetDat(tit=tit, dat=dat, col=col, x_pos1=0.25,x_pos2=0.72))
             
     def limp_tarj(self):
-        '''Limpiar tarjetas'''
+        '''Limpiar tarjetas.'''
         self.ids.tabla.clear_widgets()
 
     # Métodos Screen: eleg_loc              ######
@@ -444,7 +440,6 @@ class ScMg(MDScreenManager):
         Parámetros
             lista_res: lista a insertar en `MDlist.`
         '''
-        # print(lista_res)
         
         self.ids.list_ciud.clear_widgets()
         for c in lista_res:
@@ -555,11 +550,7 @@ class CiudItem(OneLineListItem):
         self.id = id
         
     def click(self):
-        
-        # print(self.id, "CiudItem.click")
-        
         self.app.root.ciud_eleg_id = self.id
-        # return super().on_touch_down(touch)
         
 class MainApp(MDApp):
     title= "Veleta"
@@ -577,7 +568,10 @@ class MainApp(MDApp):
     
     # hora futura para predicción de lluvia
     h_ll = NumericProperty(1)
-        
+    
+    # info emergente
+    dialog = None 
+    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
@@ -618,7 +612,34 @@ No se pueden actualizar los datos.")
             
             self.pantalla("main")
         print(self.root.ciud_eleg_id)
+    
+
+    # Lanzar info emergente
+    def vent_info(self):
+        '''Lanzar información sobre App.'''
+        if not self.dialog:
+            self.dialog = MDDialog(
+                text=f'{self.conf.cfg["info"]["app_ia"]}\n\
+{self.conf.cfg["info"]["app_ib"]}\n\
+Versión: {self.conf.cfg["info"]["version"]} \n\n\
+{self.conf.cfg["info"]["firma"]}',
+                buttons=[
+                    MDFlatButton(
+                        text="OK",
+                        theme_text_color="Custom",
+                        text_color=self.theme_cls.primary_color,
+                        on_press= self.cerr_info
+                    ),
+                ],
+            )
+        # self.dialog.text = self.conf.cfg["info"]["app_i"]
+        self.dialog.open()            
         
+    # Cerrar info emergente
+    def cerr_info(self, inst):
+        '''Orden para cerrar info app. emergente.'''
+        if self.dialog:
+            self.dialog.dismiss(force=True) 
 if __name__ == "__main__":
 
     MainApp().run()
