@@ -52,7 +52,7 @@
         MDTopAppBar:
             id: topb
             elevation: 2
-            title: "[size=25]Condiciones en "+root.localid+"[/size]\n"
+            title: "[size=25]Condiciones en "+root.localid+"[/size]"
             markup: True
             pos_hint: {'top': 1}
             size_hint: 1, .1
@@ -200,15 +200,16 @@
         orientation: 'horizontal'
         MDLabel:
             size_hint: .6, 1
-            text: "  "+root.tit+":"
+            text: ""+root.tit+":"
             font_size: 22
             halign: "center"
+            markup: True
 
         MDLabel:
             size_hint: .4, 1
             text: "[b]"+root.dat+"[/b]"
             markup: True
-            font_size: 20
+            font_size: 23
             halign: "left"
 
 
@@ -224,5 +225,6 @@
     on_release: 
         root.click()
         app.root.confirmar_ciud()
-        app.root.cargar_dat_act()
+        app.root.cargar_barra()
+        #app.root.cargar_dat_act()
         app.root.current = "main"

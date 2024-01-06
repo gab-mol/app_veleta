@@ -29,7 +29,10 @@ from pprint import pprint
 
 Builder.load_file("vista.kv")
 # Extracción de datos Meteorológicos ########################################
-def hora_futura(fh, str=False):
+def hora_futura(fh:int, str=False):
+    '''Suma una cantidad determinada de horas a la hora actual.
+    ### Parámetros
+    #   fh: horas a sumar'''
     ts = datetime.now() + timedelta(hours=fh)
     return ts.strftime('%H') if str else int(ts.strftime('%H'))
 
@@ -312,13 +315,12 @@ class ScMg(MDScreenManager):
     direc_s = StringProperty()
     temp= StringProperty()
     
-    
     # Screen: eleg_loc
     ciud_input = StringProperty()
     lista_res = ListProperty()
     dicc_res = DictProperty()
     ciud_eleg_id = StringProperty()
-    ciud_eleg = DictProperty({"name":"None"})
+    # ciud_eleg = DictProperty({"name":"None"})
     
     def __init__(self, err=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -334,21 +336,26 @@ class ScMg(MDScreenManager):
                 Thread(target=Clock.schedule_interval(self.app.consulta_api,900),
                     daemon=True).start()
                 
-                # Barra info
-                lat = self.app.meteo_data["latitude"]
-                lon = self.app.meteo_data["longitude"]
-                nom = self.app.conf.cfg["configvars"]["nombre"]
-                pais = self.app.conf.cfg["configvars"]["pais"]
-                
-                self.localid = f'{nom}, {pais}'
-                self.coord = f"Latitud: {lat}, Longitud: {lon}"       
-                
-                # lanzar actualización
-                self.cargar_dat_act()
-                Clock.schedule_interval(self.cargar_dat_act, 850)
-                self.current = "main"
+                # Barra info y 
+                self.cargar_barra()
         else:
             self.current = "eleg_loc"
+
+    def cargar_barra(self, *args):
+            '''Cargar datos en Barra superior y banner. 
+            Lanza hilo de actualización'''
+            lat = self.app.meteo_data["latitude"]
+            lon = self.app.meteo_data["longitude"]
+            nom = self.app.conf.cfg["configvars"]["nombre"]
+            pais = self.app.conf.cfg["configvars"]["pais"]
+            
+            self.localid = f'{nom}, {pais}'
+            self.coord = f"Latitud: {lat}, Longitud: {lon}"       
+            
+            # lanzar actualización
+            self.cargar_dat_act()
+            Clock.schedule_interval(self.cargar_dat_act, 850)
+            self.current = "main"
 
     def cargar_dat_act(self, *args):
         '''Toma datos de la propiedad `meteo_data` de la instancia de `MainApp`, 
@@ -398,7 +405,7 @@ class ScMg(MDScreenManager):
             )[0]
         )
         
-        self.prob_ll = f"{prob_ll} %"
+        self.prob_ll = f"        {prob_ll} %"
         print("\nClave", hf,"!!! VALOR:\n",self.prob_ll)
         
         
@@ -409,9 +416,13 @@ class ScMg(MDScreenManager):
     def recarg_tj(self):
         ## Recargar datos de tarjetas
         self.limp_tarj()
-        print("ESTO TIENE QUE SER:", self.prob_ll)
+        # print("ESTO TIENE QUE SER:", self.prob_ll)
+        if self.app.h_ll == 1:
+            h = "h"
+        else:
+            h = "hs"
         self.ids.tabla.add_widget(
-            MetDat(tit=f"Precipitaciones en {self.app.h_ll} h ", 
+            MetDat(tit=f"Precipitaciones en [b]{self.app.h_ll}[/b] {h} ", 
                     dat=self.prob_ll, col="#76C7E8", boton=True)
         )
             
@@ -445,14 +456,13 @@ class ScMg(MDScreenManager):
 
     def buscar_ciud(self):
         '''
-        Consulta a API de geolocalización, y carga GUI con los resultados
+        Consulta a API de geolocalización, y carga GUI con los resultados.
         '''
         async def cons():
             '''Lanzar consulta asincrónica, listado de resultados y envío a 
             widget `MDlist`'''
             self.dicc_res = await self.app.localid.consulta_api(self.ciud_input)            
             self.lista_res = self.app.localid.listar_res(self.dicc_res)
-            # print(self.lista_res)
             self.lista_ciud(self.lista_res)
         ak.start(cons())
 
@@ -479,39 +489,46 @@ class ScMg(MDScreenManager):
             
             print("ejecutando self.app.consulta_api")
             self.app.consulta_api()
-            
-        # En progreso...
 
 
 class MetDat(MDCard):
+    '''Tarjeta de datos meteorológicos. Pensada para usarse en bucle.'''
     tit = StringProperty()
     dat = StringProperty()
     col = StringProperty()
     
     def __init__(self, tit:str, dat:str, col:str, boton=False,
                  *args, **kwargs):
+        '''
+        ### Parámetros
+            - tit: Variable meteorológica a informar.
+            - dat: Valor de la variable meteorológica.
+            - col: Color de la tarjeta. (Hexadecimal)
+            - boton: (defoult: `False`) activa el botón-ícono para cambiar \
+                el número de horas futuras de la predicción.
+        '''        
         super().__init__(*args, **kwargs)
+
         self.app = MainApp.get_running_app()
         self.tit = tit
         self.dat = dat
         self.md_bg_color = col
         
+        # Botón para pronóstico de lluvia
         if boton:
-            
             self.add_widget(
                 MDIconButton(
                     size_hint= (None,None,),
                     pos_hint= {'top': 1, 'right':0},
                     icon= "clock",
                     on_press=self.precip_prob,
-                    text=f"[b]+ {self.app.h_ll} h[/b]" #self.bot_prec_prop
-                    # line_width= 2,
-                    # theme_text_color= "Custom",
-                    # text_color="#000000"
+                    text=f"[b]+ {self.app.h_ll} h[/b]"
                 )
             )
     
     def precip_prob(self, *args):
+        '''Método invocado por el botón para sumar 
+        horas al pronósitico de lluvia.'''
         self.app.h_ll += 1
         print(self.app.h_ll)
         self.app.root.probab_ll(recargar=True)
