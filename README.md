@@ -1,18 +1,19 @@
 # Veleta de escritorio
 
 ### Concepto
-> Aplicación minimalista para ver la dirección del viento actual y predicciones para las horas siguientes.  
+> Aplicación minimalista para visualizar la dirección y velocidad del viento actual, T°, y predicciones para precipitaciones en horas siguientes.  
 > (Practicar uso de KivyMD y extracción de datos de API)
 
-## Desarrollo | Actualmente: _Alfa_
+## Desarrollo | Actualmente: _Beta_
 
 ### Historia
 - Fecha de inicio de desarrollo: 6/12/2023
 - Fecha lanz. Alfa. 4/1/2024
+- Fecha lanz. Beta. 6/1/2024
 
 ## Información general
-### Datos meteorológicos
-Se extraen de [Weather Forecast API](https://open-meteo.com/en/docs) (endpoint gratuito)  
+### Datos meteorológicos (endpoints gratuitos)
+Se extraen de [Weather Forecast API](https://open-meteo.com/en/docs)   
 Información de geolocalización de [Geocoding API](https://open-meteo.com/en/docs/geocoding-api)
 ### Framework
 GUI desarrollada en **Kivy v.: 2.0.0**
