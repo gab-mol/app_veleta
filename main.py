@@ -314,6 +314,7 @@ class ScMg(MDScreenManager):
     veloc = StringProperty()
     direc_s = StringProperty()
     temp= StringProperty()
+    hf= StringProperty()
     
     # Screen: eleg_loc
     ciud_input = StringProperty()
@@ -398,15 +399,15 @@ class ScMg(MDScreenManager):
         if self.app.h_ll > prob_ll_l[2]:
             self.app.h_ll = 1         
         
-        hf = hora_futura(self.app.h_ll, str=True)        
+        self.hf = hora_futura(self.app.h_ll, str=True)        
         
         prob_ll = str(list(
-            df[df["time"] == hf]["precipitation_probability"]
+            df[df["time"] == self.hf]["precipitation_probability"]
             )[0]
         )
         
         self.prob_ll = f"        {prob_ll} %"
-        print("\nClave", hf,"!!! VALOR:\n",self.prob_ll)
+        print("\nClave", self.hf,"!!! VALOR:\n",self.prob_ll)
         
         
         # actualizar propiedad 
@@ -422,15 +423,15 @@ class ScMg(MDScreenManager):
         else:
             h = "hs"
         self.ids.tabla.add_widget(
-            MetDat(tit=f"Precipitaciones en [b]{self.app.h_ll}[/b] {h} ", 
-                    dat=self.prob_ll, col="#76C7E8", boton=True)
+            MetDat(tit=f"Precipitaciones \nen [b]{self.app.h_ll}[/b] {h} ({self.hf} hs.)", 
+                    dat=self.prob_ll, col="#76C7E8", x_pos1=0.35, x_pos2=0.8, boton=True)
         )
             
-        for tit, dat, col in zip(["Velocidad del viento ",
+        for tit, dat, col in zip(["Velocidad \ndel viento ",
                                   "Viento desde ","Temperatura "],
                                 [self.veloc, self.direc_s, self.temp],
                                 ["#99E876", "#B3E876", "#E89090"]):
-            self.ids.tabla.add_widget(MetDat(tit=tit, dat=dat, col=col))
+            self.ids.tabla.add_widget(MetDat(tit=tit, dat=dat, col=col, x_pos1=0.25,x_pos2=0.72))
             
     def limp_tarj(self):
         '''Limpiar tarjetas'''
@@ -496,6 +497,9 @@ class MetDat(MDCard):
     tit = StringProperty()
     dat = StringProperty()
     col = StringProperty()
+    x_pos1 = NumericProperty()
+    x_pos2 = NumericProperty()
+
     
     def __init__(self, tit:str, dat:str, col:str, boton=False,
                  *args, **kwargs):

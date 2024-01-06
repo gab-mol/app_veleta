@@ -196,21 +196,24 @@
 
 
 <MetDat@MDCard>
-    MDBoxLayout:
-        orientation: 'horizontal'
+    MDRelativeLayout:
+        # orientation: 'horizontal'
         MDLabel:
-            size_hint: .6, 1
-            text: ""+root.tit+":"
-            font_size: 22
+            pos_hint: {'center_x': root.x_pos1,'center_y': 0.5}
+            # size_hint: .6, 1
+            text: root.tit+":"
+            font_size: 20
             halign: "center"
             markup: True
+            multiline: True
 
         MDLabel:
-            size_hint: .4, 1
+            pos_hint: {'center_x': root.x_pos2,'center_y': 0.5}
+            # size_hint: .4, 1
             text: "[b]"+root.dat+"[/b]"
             markup: True
             font_size: 23
-            halign: "left"
+            halign: "center"
 
 
 <PuntCardLab@MDLabel>
