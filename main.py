@@ -350,7 +350,7 @@ class ScMg(MDScreenManager):
     a_viento_s= StringProperty()
     
     #   tarjetas
-    prob_ll = ListProperty()
+    prob_ll = StringProperty()
     hf = StringProperty()
     
     tstamp = StringProperty()
@@ -409,7 +409,7 @@ class ScMg(MDScreenManager):
             self.tstamp = hora_loc(self.cond_ahora["time"], solo_h=True)
             self.tstamp_f = hora_loc(self.cond_ahora["time"])
             self.tiempo_ahora()
-            # self.recarg_tj()
+
             # lanzar actualización
             Clock.schedule_interval(self._rutina, 850)
             self.current = "main"
@@ -473,22 +473,20 @@ class ScMg(MDScreenManager):
         # rosa de los vientos
         self.a_viento = direc
         
-    def probab_ll(self, h) -> list:
+    def probab_ll(self, h) -> str:
         '''
         Obtener probabilidad de lluvia para cualquiera de 
         las horas de día.
         ### Parámetro
-            - h: hora deseada (formato 24hs)
+            - h: hora deseada (formato 24hs).
         ### Return
-            - `list`
-                - [0] valor de probabilidad de lluvia
-                - [1] hora  de predicción (formato 24hs) correspondiente 
+            - `str`+" %" valor de probabilidad de lluvia.
         '''
         pll_en1h = self.t_pronost.loc[
             self.t_pronost["time"] == h,
             "precipitation_probability"
         ].values[0]
-        return [f"{pll_en1h} %", h]
+        return f"{pll_en1h} %"
         
     def recarg_tj(self):
         '''Actualizar tarjetas de condiciones meteorológicas.'''
@@ -529,8 +527,8 @@ class ScMg(MDScreenManager):
                  col=col, line_color=lin, x_pos1=0.25, x_pos2=0.72))
         #  pronóstico lluvia por debajo
         self.ids.sep.add_widget(
-            MetDat(tit=f"Precipitaciones a las [b]{self.prob_ll[1]} hs[/b]:", 
-                    dat=self.prob_ll[0], col="#76C7E8", x_pos1=0.35, x_pos2=0.7)
+            MetDat(tit=f"Precipitaciones a las [b]{self.hf} hs[/b]:", 
+                    dat=self.prob_ll, col="#76C7E8", x_pos1=0.35, x_pos2=0.7)
         )
             
     def limp_tarj(self):
@@ -559,7 +557,7 @@ class ScMg(MDScreenManager):
         '''Cargar lista de ciudades en GUI.
         
         Parámetros
-            lista_res: lista a insertar en `MDlist.`
+            lista_res: lista a insertar en `MDlist`.
         '''
         
         self.ids.list_ciud.clear_widgets()
