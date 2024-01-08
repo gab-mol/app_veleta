@@ -43,6 +43,13 @@ def hora_futura(fh:int, str=True):
     ts = datetime.now() + timedelta(hours=fh)
     return ts.strftime('%H') if str else int(ts.strftime('%H'))
 
+def hs_restantes() -> int:
+    '''Retorna número de horas 
+    restantes en el día.'''
+    ahora = int(datetime.now().strftime('%H'))
+    hasta_24 = range(ahora,23)
+
+    return len(hasta_24)
 def hora_loc(time, solo_h=False) -> str:
     '''
     Ajusta hora desde GMT-0 a GMT-3 y lo formatea como strting:
@@ -341,6 +348,7 @@ class ScMg(MDScreenManager):
     hf = StringProperty()
     
     tstamp = StringProperty()
+    tstamp_f = StringProperty()
     temp= StringProperty()
     hum = StringProperty()
     lluv = StringProperty() 
@@ -393,6 +401,7 @@ class ScMg(MDScreenManager):
             
             self.set_data()
             self.tstamp = hora_loc(self.cond_ahora["time"], solo_h=True)
+            self.tstamp_f = hora_loc(self.cond_ahora["time"])
             self.tiempo_ahora()
             # self.recarg_tj()
             # lanzar actualización
@@ -416,6 +425,7 @@ class ScMg(MDScreenManager):
         # señalizar que son datos del momento
         self.actual= True
         
+        
         self.temp= str(self.cond_ahora["temperature_2m"])+" °C"
         self.hum= str(self.cond_ahora["relative_humidity_2m"])+" %"
         self.lluv= str(self.cond_ahora["rain"])+" mm"
@@ -425,10 +435,13 @@ class ScMg(MDScreenManager):
         self.raf= str(self.cond_ahora["wind_gusts_10m"])+" km/h"
         
         # esta variable solo puede ser futura... (pero la quiero mostrar igual)
-        self.prob_ll = self.probab_ll(hora_futura(0))
+        self.prob_ll = self.probab_ll(hora_futura(1))
         
         # actualizar tarjetas
         self.recarg_tj()
+        
+        # rosa de los vientos
+        self.a_viento = direc
         
     def pronost_tiempo(self):
         '''Mostrar en tarjetas datos pronosticados.'''
@@ -442,7 +455,7 @@ class ScMg(MDScreenManager):
         self.hum= str(t.loc[t["time"]==self.hf,"relative_humidity_2m"].values[0])+" %"
         self.lluv= str(t.loc[t["time"]==self.hf,"rain"].values[0])+" mm"
         self.veloc= str(t.loc[t["time"]==self.hf,"wind_speed_10m"].values[0])+" km/h"
-        direc = t.loc[t["time"]==self.hf,"wind_speed_10m"].values[0]
+        direc = float(t.loc[t["time"]==self.hf,"wind_speed_10m"].values[0])
         self.direc_s= "   "+MeteoDat.a_cardinales(direc)
         self.raf= str(t.loc[t["time"]==self.hf,"wind_gusts_10m"].values[0])+" km/h"
         #  pronóstico lluvia
@@ -450,6 +463,9 @@ class ScMg(MDScreenManager):
         
         # actualizar tarjetas
         self.recarg_tj()
+        
+        # rosa de los vientos
+        self.a_viento = direc
         
     def probab_ll(self, h) -> list:
         '''
@@ -462,7 +478,6 @@ class ScMg(MDScreenManager):
                 - [0] valor de probabilidad de lluvia
                 - [1] hora  de predicción (formato 24hs) correspondiente 
         '''
-        print(">>>>",self.t_pronost)
         pll_en1h = self.t_pronost.loc[
             self.t_pronost["time"] == h,
             "precipitation_probability"
@@ -518,70 +533,20 @@ class ScMg(MDScreenManager):
         self.ids.sep.clear_widgets()
 
     def hora_futura(self):
-        '''Agrega una hora al pronóstico que se muestra
+        '''
+        :Acción botón "reloj" a la derecha de pronóstico:
+        
+        Agrega una hora al pronóstico que se muestra
         (propiedad `ScMg.hf`).'''
         self.contador_h += 1
-        if self.contador_h > 23:
+        if self.contador_h > hs_restantes():
             self.contador_h = 1
+        
+        print(f"hora_futura({self.contador_h}):\n",
+            hora_futura(self.contador_h))
         self.hf = hora_futura(self.contador_h)
         self.pronost_tiempo()
             
-#-------------------
-    def _cargar_dat_act(self, *args):
-        '''Toma datos de la propiedad `meteo_data` de la instancia de `MainApp`, 
-        y actualiza la GUI para los datos de condiciones actuales.
-        Pensada para ejecutarse regularmente con `kivy.clock.Clock`.
-        '''
-        print("\Cargando GUI con datos...\n")
-        cond_ahora = self.app.meteo_data["current"]
-        
-        # Recuperar datos desde app
-        direc = cond_ahora["wind_direction_10m"]
-        time = pd.to_datetime(cond_ahora["time"])
-        time = time - pd.Timedelta(hours=3) # GMT-0 a GMT-3
-        self.reloj = time.strftime(f"%H:%M hs. del %d/%m/%y")   
-        
-        # veleta
-        self.a_viento = direc
-        self.a_viento_s = str(direc)              
-
-        # Tarjetas condiciones actuales
-        self.veloc = str(cond_ahora["wind_speed_10m"])+" km/h"
-        self.direc_s  = "   "+MeteoDat.a_cardinales(direc)
-        self.temp = str(cond_ahora["temperature_2m"])+" °C"
-        
-        # actualizar tarjetas
-        self.probab_ll()
-        self.recarg_tj()
-    def _probab_ll(self, recargar=False, *args):
-        print("probab_ll()")
-        cond_pred = self.app.meteo_data["hourly"]
-        prob_ll_l = MeteoDat.prob_prec(
-            pd.DataFrame(cond_pred), 
-            h_prec= self.app.h_ll
-        )
-        
-        df = prob_ll_l[0]
-        if self.app.h_ll > prob_ll_l[2]:
-            self.app.h_ll = 1         
-        
-        self.hf = hora_futura(self.app.h_ll)        
-        
-        prob_ll = str(list(
-            df[df["time"] == self.hf]["precipitation_probability"]
-            )[0]
-        )
-        
-        self.prob_ll = f"        {prob_ll} %"
-        print("\nClave", self.hf,"!!! VALOR:\n",self.prob_ll)
-        
-        
-        # actualizar propiedad 
-        if recargar:
-            self.recarg_tj()
-    def _pr(self):
-        print("probar")
-#-------------------
 
     # Métodos Screen: eleg_loc              ######
     def lista_ciud(self, lista_res):

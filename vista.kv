@@ -64,7 +64,7 @@
         MDBanner:
             id: banner
             type: "two-line"
-            text: ["Corresponde a las: "+root.reloj, "Coordenadas: "+root.coord]
+            text: ["Corresponde a las: "+root.tstamp_f, "Coordenadas: "+root.coord]
             over_widget: meteo
             vertical_pad: topb.height
             right_action: ["Sobre App.", lambda x: app.vent_info()]
@@ -81,7 +81,8 @@
                 orientation: 'horizontal'
                 MDRaisedButton:
                     pos_hint: {'center_x': 0.5,'center_y': 0.5}
-                    size_hint: 1, .9
+                    size_hint: 1, .95
+                    elevation: 1
                     text: "Condiciones actuales [b]"+root.tstamp+"[/b]"
                     markup: True
                     font_size: 15
