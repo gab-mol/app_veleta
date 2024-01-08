@@ -9,8 +9,8 @@
 ### Historia
 - Fecha de inicio de desarrollo: 6/12/2023
 - Fecha lanz. Alfa. 4/1/2024
-- Fecha lanz. Beta. 6/1/2024
-
+- Fecha lanz. Beta.1 6/1/2024
+- Fecha lanz. Beta.2 8/1/2024
 ## Información general
 ### Datos meteorológicos (endpoints gratuitos)
 Se extraen de [Weather Forecast API](https://open-meteo.com/en/docs)   
