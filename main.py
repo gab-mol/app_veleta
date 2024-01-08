@@ -319,6 +319,12 @@ class GeoCod:
             if "results" not in dic_ciud.keys():
                 str_res_ciud.append(["E","-    sin resultados    - "])
             else:
+                l = dic_ciud['results']
+                for c, id in zip(l, 
+                        range(len(l))):
+                    if 'country' not in c.keys():
+                        dic_ciud['results'][id]["country"] = "???"
+                                  
                 for c, id in zip(dic_ciud['results'], 
                         range(len(dic_ciud['results']))):
                     str_res_ciud.append([
