@@ -9,7 +9,7 @@
                 Color:
                     rgb: utils.get_color_from_hex('#ff9800')
                 Line:
-                    points:  self.center_x-280, self.center_y+110,     self.center_x+280, self.center_y+110,    self.center_x-280, self.center_y+110,       self.center_x-280, self.center_y-305,       self.center_x+280, self.center_y-305,       self.center_x+280, self.center_y+110
+                    points:  self.center_x-280, self.center_y+180,     self.center_x+280, self.center_y+180,    self.center_x-280, self.center_y+180,       self.center_x-280, self.center_y-365,       self.center_x+280, self.center_y-365,       self.center_x+280, self.center_y+180
                     width: 5
             MDTopAppBar:
                 title: "Búsqueda de localidades"
@@ -19,7 +19,7 @@
                 spacing: 10
                 MDBoxLayout:
                     orientation: 'horizontal'
-                    size_hint: 1, .2
+                    size_hint: 1, .15
                     padding: [15,0,15,0]
                     spacing: 8
                     MDTextField:
@@ -41,7 +41,7 @@
                         on_release: root.buscar_ciud()
                 MDBoxLayout:
                     padding: [25,40,25,35]
-                    size_hint: 1, .8
+                    size_hint: 1, .85
                     ScrollView:
                         MDList:
                             id: list_ciud
