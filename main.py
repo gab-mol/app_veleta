@@ -32,10 +32,14 @@ __version__ = "Beta"
 
 Builder.load_file("vista.kv")
 # Extracción de datos Meteorológicos ########################################
-def hora_futura(fh:int, str=False):
+def hora_futura(fh:int, str=True):
     '''Suma una cantidad determinada de horas a la hora actual.
     ### Parámetros
-        - h: horas a sumar'''
+        - h: horas a sumar
+        - str: (`bool`) por defecto hora en string
+    ### return
+        - hora (24hs) en `str` o `int`
+    '''
     ts = datetime.now() + timedelta(hours=fh)
     return ts.strftime('%H') if str else int(ts.strftime('%H'))
 
@@ -227,7 +231,7 @@ convertido a pandas.Dataframe.
         '''
 
         # Hora futura deseada
-        ts_h = hora_futura(0, str=True)
+        ts_h = hora_futura(0)
         # convertir columna a timestamp, y luego a str solo con la hora
         predicc['time'] = pd.to_datetime(predicc['time']).dt.strftime('%H')
        
@@ -359,6 +363,7 @@ class ScMg(MDScreenManager):
         print("con_loc:", self.app.con_loc)
         
         self.contador_h = 1
+        self.hf = hora_futura(self.contador_h)
         
         if self.app.con_loc:
             self.meteo_data = self.app.con.descar_datos()
@@ -402,7 +407,9 @@ class ScMg(MDScreenManager):
     
     def set_data(self):
         self.cond_ahora = self.app.meteo_data["current"]
-        self.pronost = self.app.meteo_data["hourly"]
+        
+        pronost = self.app.meteo_data["hourly"]
+        self.t_pronost = MeteoDat.tabla_pronost(pronost)
         
     def tiempo_ahora(self):
         '''Mostrar en tarjetas datos del momento.'''
@@ -418,32 +425,49 @@ class ScMg(MDScreenManager):
         self.raf= str(self.cond_ahora["wind_gusts_10m"])+" km/h"
         
         # esta variable solo puede ser futura... (pero la quiero mostrar igual)
-        self.prob_ll = self.probab_ll(1)
+        self.prob_ll = self.probab_ll(hora_futura(0))
         
         # actualizar tarjetas
         self.recarg_tj()
         
     def pronost_tiempo(self):
         '''Mostrar en tarjetas datos pronosticados.'''
+        print("Pronóstico para:",self.hf)        
         # señalizar que son predicciones
         self.actual= False
         
-        self.pronost
-        self.prob_ll = self.probab_ll(self.contador_h)
+        # Mostrar en tarjetas pronóstico para `ScMg.hf` (hora futura)
+        t = self.t_pronost
+        self.temp= str(t.loc[t["time"]==self.hf,"temperature_2m"].values[0])+" °C"
+        self.hum= str(t.loc[t["time"]==self.hf,"relative_humidity_2m"].values[0])+" %"
+        self.lluv= str(t.loc[t["time"]==self.hf,"rain"].values[0])+" mm"
+        self.veloc= str(t.loc[t["time"]==self.hf,"wind_speed_10m"].values[0])+" km/h"
+        direc = t.loc[t["time"]==self.hf,"wind_speed_10m"].values[0]
+        self.direc_s= "   "+MeteoDat.a_cardinales(direc)
+        self.raf= str(t.loc[t["time"]==self.hf,"wind_gusts_10m"].values[0])+" km/h"
+        #  pronóstico lluvia
+        self.prob_ll = self.probab_ll(self.hf)
         
         # actualizar tarjetas
         self.recarg_tj()
         
-    def probab_ll(self, f):
-        ''''''
-        hf = hora_futura(f, str=True)
-        prob_ll= pd.DataFrame(self.pronost)
-        pronost = MeteoDat.tabla_pronost(self.pronost)
-        pll_en1h =  prob_ll.loc[
-            pronost["time"] == hf,
+    def probab_ll(self, h) -> list:
+        '''
+        Obtener probabilidad de lluvia para cualquiera de 
+        las horas de día.
+        ### Parámetro
+            - h: hora deseada (formato 24hs)
+        ### Return
+            - `list`
+                - [0] valor de probabilidad de lluvia
+                - [1] hora  de predicción (formato 24hs) correspondiente 
+        '''
+        print(">>>>",self.t_pronost)
+        pll_en1h = self.t_pronost.loc[
+            self.t_pronost["time"] == h,
             "precipitation_probability"
         ].values[0]
-        return [f"{pll_en1h} %", hf]
+        return [f"{pll_en1h} %", h]
         
     def recarg_tj(self):
         '''Actualizar tarjetas de condiciones meteorológicas.'''
@@ -494,10 +518,12 @@ class ScMg(MDScreenManager):
         self.ids.sep.clear_widgets()
 
     def hora_futura(self):
-        '''Agrega una hora al pronóstico que se muestra.'''
+        '''Agrega una hora al pronóstico que se muestra
+        (propiedad `ScMg.hf`).'''
         self.contador_h += 1
         if self.contador_h > 23:
             self.contador_h = 1
+        self.hf = hora_futura(self.contador_h)
         self.pronost_tiempo()
             
 #-------------------
@@ -539,7 +565,7 @@ class ScMg(MDScreenManager):
         if self.app.h_ll > prob_ll_l[2]:
             self.app.h_ll = 1         
         
-        self.hf = hora_futura(self.app.h_ll, str=True)        
+        self.hf = hora_futura(self.app.h_ll)        
         
         prob_ll = str(list(
             df[df["time"] == self.hf]["precipitation_probability"]
