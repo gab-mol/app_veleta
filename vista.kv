@@ -51,11 +51,11 @@
         name: "main"
         MDTopAppBar:
             id: topb
-            elevation: 2
-            title: "[size=25]Condiciones en "+root.localid+"[/size]"
+            elevation: 1
+            title: "[size=20]Condiciones en "+root.localid+"[/size]"
             markup: True
             pos_hint: {'top': 1}
-            size_hint: 1, .1
+            size_hint: 1, .07
             right_action_items: 
                 [
                 ["information-outline",lambda x: banner.show()],
@@ -71,10 +71,58 @@
         MDBoxLayout:
             id: meteo
             orientation: 'vertical'
-            padding: 20
+            padding: [20, 5, 20, 20]
             spacing: 5
             size_hint_y: None # importante
             height: Window.height - topb.height
+            MDBoxLayout:
+                size_hint_y: .05
+                spacing: 5
+                orientation: 'horizontal'
+                MDRaisedButton:
+                    pos_hint: {'center_x': 0.5,'center_y': 0.5}
+                    size_hint: 1, .9
+                    text: "Condiciones actuales [b]"+root.tstamp+"[/b]"
+                    markup: True
+                    font_size: 15
+                    icon: "clock"
+                    icon_color: "black"
+                    text_color: "black"
+                    md_bg_color: '#ff9800'
+                    on_press: root.tiempo_ahora()
+                MDCard:
+                    size_hint: 1, 1
+                    md_bg_color: (0,0,0,0)
+                    line_color: '#ff9800'
+                    MDRoundFlatIconButton:
+                        pos_hint: {'center_x': 0.5,'center_y': 0.5}
+                        size_hint_x: .45
+                        text: "Pronóstico"
+                        markup: True
+                        font_size: 15
+                        icon: "clock-end"
+                        icon_color: "black"
+                        text_color: "black"
+                        line_color: (0, 0, 0, 0)
+                        on_press: root.pronost_tiempo()
+                    MDLabel:
+                        size_hint_x: .1
+                        pos_hint: {'center_x': 0.5,'center_y': 0.5}
+                        text: "   |"
+                        font_size: 15
+                        text_color: "black"
+                    MDRoundFlatIconButton:
+                        pos_hint: {'center_x': 0.7,'center_y': 0.5}
+                        size_hint_x: .45
+                        text: " hora"
+                        halign: "left"
+                        markup: True
+                        font_size: 15
+                        icon: "clock"
+                        icon_color: "black"
+                        text_color: "black"
+                        line_color: (0, 0, 0, 0)
+                        on_press: root.hora_futura()
             DatTab:
                 id: tabla
                 spacing: 5
@@ -82,8 +130,10 @@
                 cols: 2
             MDBoxLayout:
                 id: sep
-                size_hint: 1, .1          
+                padding:[0,0,0,20]
+                size_hint: 1, .1
             MDFloatLayout:
+                size_hint: 1, .6
                 id: rosa_v
                 padding: 20              
                 Image:

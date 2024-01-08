@@ -1,8 +1,8 @@
 from kivy.config import Config
 ## Configuración de dimensiones de ventana
-Config.set('graphics', 'resizable', '0') 
+# Config.set('graphics', 'resizable', '0') 
 Config.set('graphics', 'width', '600')
-Config.set('graphics', 'height', '660')
+Config.set('graphics', 'height', '800')
 from kivymd.app import MDApp
 from kivymd.uix.screenmanager import MDScreenManager
 from kivymd.uix.screen import Screen
@@ -35,10 +35,23 @@ Builder.load_file("vista.kv")
 def hora_futura(fh:int, str=False):
     '''Suma una cantidad determinada de horas a la hora actual.
     ### Parámetros
-    #   fh: horas a sumar'''
+        - h: horas a sumar'''
     ts = datetime.now() + timedelta(hours=fh)
     return ts.strftime('%H') if str else int(ts.strftime('%H'))
 
+def hora_loc(time, solo_h=False) -> str:
+    '''
+    Ajusta hora desde GMT-0 a GMT-3 y lo formatea como strting:
+    `%H:%M hs. del %d/%m/%y`.
+    ### Parámetros
+       - time: timestamp entregado en json desde API.'''
+    time = pd.to_datetime(time)
+    time = time - pd.Timedelta(hours=3) # GMT-0 a GMT-3
+    if solo_h:
+        t_str= "%H:%M hs."
+    else:
+        t_str = "%H:%M hs. del %d/%m/%y"
+    return time.strftime(t_str)  
 
 class Config:
     '''Administra archivo de configuración.'''
@@ -226,8 +239,19 @@ convertido a pandas.Dataframe.
         
         # Retornar valor
         return [fila_predicc[["time","precipitation_probability"]], ts_h, len(h_futuras_hoy)]
-
-
+    
+    @staticmethod
+    def tabla_pronost(json:dict)-> pd.DataFrame:
+        '''Recibe diccionario (json clave "Hourly" en respuesta de API)
+        lo pasa a pandas.DataFrame y transforam columna "time" de timestamp a
+        str con horas en formato 24 hs.'''
+        df = pd.DataFrame(json)
+        df['time'] = pd.to_datetime(df['time']).dt.strftime('%H')
+        return df
+        
+        
+        
+        
 class GeoCod:
     
     '''Administra consultas a "Geocoding API"'''
@@ -307,12 +331,20 @@ class ScMg(MDScreenManager):
     #    veleta 
     a_viento = NumericProperty()
     a_viento_s= StringProperty()
+    
     #   tarjetas
-    prob_ll = StringProperty()
-    veloc = StringProperty()
-    direc_s = StringProperty()
+    prob_ll = ListProperty()
+    hf = StringProperty()
+    
+    tstamp = StringProperty()
     temp= StringProperty()
-    hf= StringProperty()
+    hum = StringProperty()
+    lluv = StringProperty() 
+    veloc = StringProperty()
+    direc_s = StringProperty()      
+    raf = StringProperty()
+    
+    actual = BooleanProperty(True)
     
     # Screen: eleg_loc
     ciud_input = StringProperty()
@@ -325,6 +357,9 @@ class ScMg(MDScreenManager):
         self.app = MainApp.get_running_app()
         self.vrs = self.app.conf.cfg["info"]["version"]
         print("con_loc:", self.app.con_loc)
+        
+        self.contador_h = 1
+        
         if self.app.con_loc:
             self.meteo_data = self.app.con.descar_datos()
             if self.meteo_data["err"]:
@@ -351,12 +386,122 @@ class ScMg(MDScreenManager):
             self.localid = f'{nom}, {pais}'
             self.coord = f"Latitud: {lat}, Longitud: {lon}"       
             
+            self.set_data()
+            self.tstamp = hora_loc(self.cond_ahora["time"], solo_h=True)
+            self.tiempo_ahora()
+            # self.recarg_tj()
             # lanzar actualización
-            self.cargar_dat_act()
-            Clock.schedule_interval(self.cargar_dat_act, 850)
+            Clock.schedule_interval(self._rutina, 850)
             self.current = "main"
 
-    def cargar_dat_act(self, *args):
+    def _rutina(self, *args):
+        self.set_data()
+        self.tiempo_ahora()
+        self.recarg_tj()
+        # self.tiempo_ahora()
+    
+    def set_data(self):
+        self.cond_ahora = self.app.meteo_data["current"]
+        self.pronost = self.app.meteo_data["hourly"]
+        
+    def tiempo_ahora(self):
+        '''Mostrar en tarjetas datos del momento.'''
+        # señalizar que son datos del momento
+        self.actual= True
+        
+        self.temp= str(self.cond_ahora["temperature_2m"])+" °C"
+        self.hum= str(self.cond_ahora["relative_humidity_2m"])+" %"
+        self.lluv= str(self.cond_ahora["rain"])+" mm"
+        self.veloc= str(self.cond_ahora["wind_speed_10m"])+" km/h"
+        direc = self.cond_ahora["wind_speed_10m"]
+        self.direc_s= "   "+MeteoDat.a_cardinales(direc)
+        self.raf= str(self.cond_ahora["wind_gusts_10m"])+" km/h"
+        
+        # esta variable solo puede ser futura... (pero la quiero mostrar igual)
+        self.prob_ll = self.probab_ll(1)
+        
+        # actualizar tarjetas
+        self.recarg_tj()
+        
+    def pronost_tiempo(self):
+        '''Mostrar en tarjetas datos pronosticados.'''
+        # señalizar que son predicciones
+        self.actual= False
+        
+        self.pronost
+        self.prob_ll = self.probab_ll(self.contador_h)
+        
+        # actualizar tarjetas
+        self.recarg_tj()
+        
+    def probab_ll(self, f):
+        ''''''
+        hf = hora_futura(f, str=True)
+        prob_ll= pd.DataFrame(self.pronost)
+        pronost = MeteoDat.tabla_pronost(self.pronost)
+        pll_en1h =  prob_ll.loc[
+            pronost["time"] == hf,
+            "precipitation_probability"
+        ].values[0]
+        return [f"{pll_en1h} %", hf]
+        
+    def recarg_tj(self):
+        '''Actualizar tarjetas de condiciones meteorológicas.'''
+        ## Recargar datos de tarjetas
+        self.limp_tarj()
+        
+        # Señalizar actual o predicción
+        c_solido = [
+            (.91, .56, .56, 1), 
+            (.56, .70, .91, 1), 
+            (.56, .91, .90, 1), 
+            (.60, .91, .46, 1), 
+            (.70, .91, .46, 1),  
+            (.56, .91, .77, 1)
+        ]
+        if self.actual:
+            col_tarj = c_solido
+        else:
+            col_tarj = [(0, 0, 0, 0) for i in range(len(c_solido))]
+        
+        # Declaración de tarjetas en bucle
+        for tit, dat, col, lin in zip(
+            ["Temperatura ",
+            "Humedad rel.",
+            "Lluvia",
+            "Velocidad \ndel viento ",
+            "Viento desde ",
+            "Vel. ráfagas"], 
+            [self.temp, 
+             self.hum, 
+             self.lluv, 
+             self.veloc, 
+             self.direc_s,
+             self.raf],
+            col_tarj,
+            c_solido):
+            self.ids.tabla.add_widget(MetDat(tit=tit, dat=dat, 
+                 col=col, line_color=lin, x_pos1=0.25, x_pos2=0.72))
+        #  pronóstico lluvia por debajo
+        self.ids.sep.add_widget(
+            MetDat(tit=f"Precipitaciones a las [b]{self.prob_ll[1]} hs[/b]:", 
+                    dat=self.prob_ll[0], col="#76C7E8", x_pos1=0.35, x_pos2=0.7)
+        )
+            
+    def limp_tarj(self):
+        '''Limpiar tarjetas.'''
+        self.ids.tabla.clear_widgets()
+        self.ids.sep.clear_widgets()
+
+    def hora_futura(self):
+        '''Agrega una hora al pronóstico que se muestra.'''
+        self.contador_h += 1
+        if self.contador_h > 23:
+            self.contador_h = 1
+        self.pronost_tiempo()
+            
+#-------------------
+    def _cargar_dat_act(self, *args):
         '''Toma datos de la propiedad `meteo_data` de la instancia de `MainApp`, 
         y actualiza la GUI para los datos de condiciones actuales.
         Pensada para ejecutarse regularmente con `kivy.clock.Clock`.
@@ -382,8 +527,7 @@ class ScMg(MDScreenManager):
         # actualizar tarjetas
         self.probab_ll()
         self.recarg_tj()
-
-    def probab_ll(self, recargar=False, *args):
+    def _probab_ll(self, recargar=False, *args):
         print("probab_ll()")
         cond_pred = self.app.meteo_data["hourly"]
         prob_ll_l = MeteoDat.prob_prec(
@@ -409,29 +553,9 @@ class ScMg(MDScreenManager):
         # actualizar propiedad 
         if recargar:
             self.recarg_tj()
-        
-    def recarg_tj(self):
-        '''Actualizar tarjetas de condiciones meteorológicas.'''
-        ## Recargar datos de tarjetas
-        self.limp_tarj()
-        if self.app.h_ll == 1:
-            h = "h"
-        else:
-            h = "hs"
-        self.ids.tabla.add_widget(
-            MetDat(tit=f"Precipitaciones \nen [b]{self.app.h_ll}[/b] {h} ({self.hf} hs.)", 
-                    dat=self.prob_ll, col="#76C7E8", x_pos1=0.35, x_pos2=0.8, boton=True)
-        )
-            
-        for tit, dat, col in zip(["Velocidad \ndel viento ",
-                                  "Viento desde ","Temperatura "],
-                                [self.veloc, self.direc_s, self.temp],
-                                ["#99E876", "#B3E876", "#E89090"]):
-            self.ids.tabla.add_widget(MetDat(tit=tit, dat=dat, col=col, x_pos1=0.25,x_pos2=0.72))
-            
-    def limp_tarj(self):
-        '''Limpiar tarjetas.'''
-        self.ids.tabla.clear_widgets()
+    def _pr(self):
+        print("probar")
+#-------------------
 
     # Métodos Screen: eleg_loc              ######
     def lista_ciud(self, lista_res):
