@@ -97,7 +97,7 @@
                     line_color: '#ff9800'
                     MDRoundFlatIconButton:
                         pos_hint: {'center_x': 0.5,'center_y': 0.5}
-                        size_hint_x: .30
+                        size_hint_x: .29
                         text: "Pronóstico"
                         markup: True
                         font_size: 15
@@ -107,14 +107,14 @@
                         line_color: (0, 0, 0, 0)
                         on_press: root.pronost_tiempo()
                     MDLabel:
-                        size_hint_x: .1
+                        size_hint_x: .01
                         pos_hint: {'center_x': 0.5,'center_y': 0.5}
                         text: "|"
                         font_size: 15
                         text_color: "black"
                     MDRoundFlatIconButton:
-                        pos_hint: {'center_x': 0.7,'center_y': 0.5}
-                        size_hint_x: .60
+                        pos_hint: {'center_x': 0.6,'center_y': 0.5}
+                        size_hint_x: .70
                         text: root.hf
                         halign: "left"
                         markup: True
@@ -259,14 +259,16 @@
             halign: "center"
             markup: True
             multiline: True
-
+            theme_text_color: "Custom"
+            text_color: utils.get_color_from_hex(root.f_color)
         MDLabel:
             pos_hint: {'center_x': root.x_pos2,'center_y': 0.5}
             text: "[b]"+root.dat+"[/b]"
             markup: True
             font_size: 23
             halign: "center"
-
+            theme_text_color: "Custom"
+            text_color: "black" #utils.get_color_from_hex(root.f_color)
 
 <PuntCardLab@MDLabel>
     font_size: 20

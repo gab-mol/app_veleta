@@ -475,7 +475,8 @@ hs. {self.t_pronost.iloc[self.contador_h]["time_d"]}'
         self.hum= str(self.cond_ahora["relative_humidity_2m"])+" %"
         self.lluv= str(self.cond_ahora["rain"])+" mm"
         self.veloc= str(self.cond_ahora["wind_speed_10m"])+" km/h"
-        direc = self.cond_ahora["wind_speed_10m"]
+        direc = self.cond_ahora["wind_direction_10m"]
+        print("!!! VER DIRECCIÓN: ", direc)
         self.direc_s= "   "+MeteoDat.a_cardinales(direc)
         self.raf= str(self.cond_ahora["wind_gusts_10m"])+" km/h"
         
@@ -487,34 +488,7 @@ hs. {self.t_pronost.iloc[self.contador_h]["time_d"]}'
         
         # rosa de los vientos
         self.a_viento = direc
-        
-    def _pronost_tiempo(self):
-        '''
-        solo el día de la fecha!!!!
-        
-        Mostrar en tarjetas datos pronosticados.'''
-        print("Pronóstico para:",self.hf)        
-        # señalizar que son predicciones
-        self.actual= False
-        
-        # Mostrar en tarjetas pronóstico para `ScMg.hf` (hora futura)
-        t = self.t_pronost
-        self.temp= str(t.loc[t["time"]==self.hf,"temperature_2m"].values[0])+" °C"
-        self.hum= str(t.loc[t["time"]==self.hf,"relative_humidity_2m"].values[0])+" %"
-        self.lluv= str(t.loc[t["time"]==self.hf,"rain"].values[0])+" mm"
-        self.veloc= str(t.loc[t["time"]==self.hf,"wind_speed_10m"].values[0])+" km/h"
-        direc = float(t.loc[t["time"]==self.hf,"wind_speed_10m"].values[0])
-        self.direc_s= "   "+MeteoDat.a_cardinales(direc)
-        self.raf= str(t.loc[t["time"]==self.hf,"wind_gusts_10m"].values[0])+" km/h"
-        #  pronóstico lluvia
-        self.prob_ll = self.probab_ll(self.hf)
-        
-        # actualizar tarjetas
-        self.recarg_tj()
-        
-        # rosa de los vientos
-        self.a_viento = direc
-        
+            
     def pronost_tiempo(self):
         
         # señalizar que son predicciones
@@ -528,7 +502,10 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
         self.hum= str(t.iloc[self.contador_h]["relative_humidity_2m"])+" %"
         self.lluv= str(t.iloc[self.contador_h]["rain"])+" mm"
         self.veloc= str(t.iloc[self.contador_h]["wind_speed_10m"])+" km/h"
-        direc = float(t.iloc[self.contador_h]["wind_speed_10m"])
+        direc = float(t.iloc[self.contador_h]["wind_direction_10m"])
+        
+        print("!!! VER DIRECCIÓN: ", direc)
+        
         self.direc_s= "   "+MeteoDat.a_cardinales(direc)
         self.raf= str(t.iloc[self.contador_h]["wind_gusts_10m"])+" km/h"
         #  pronóstico lluvia
@@ -593,13 +570,23 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
             (.70, .91, .46, 1),  
             (.56, .91, .77, 1)
         ]
+        c_solidohex = [
+            "#FA3D01", 
+            "#49FEDE", 
+            "#69A7C0", 
+            "#19E269", 
+            "#87F0B1",  
+            "#87F09A"
+        ]
+        c_tema = ['#ff9800' for i in range(6)]
+        
         if self.actual:
-            col_tarj = c_solido
+            col_tarj = c_tema
         else:
-            col_tarj = [(0, 0, 0, 0) for i in range(len(c_solido))]
+            col_tarj = [(0, 0, 0, 0) for i in range(len(c_tema))]
         
         # Declaración de tarjetas en bucle
-        for tit, dat, col, lin in zip(
+        for tit, dat, col, tex in zip(
             ["Temperatura ",
             "Humedad rel.",
             "Lluvia",
@@ -613,13 +600,14 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
              self.direc_s,
              self.raf],
             col_tarj,
-            c_solido):
-            self.ids.tabla.add_widget(MetDat(tit=tit, dat=dat, 
-                 col=col, line_color=lin, x_pos1=0.25, x_pos2=0.72))
+            c_solidohex):
+            print(tit,dat,col,tex)
+            self.ids.tabla.add_widget(MetDat(tit=f"[b]{tit}[/b]", dat=dat, 
+                col=col, line_color=tex, f_color=tex, x_pos1=0.25, x_pos2=0.72))
         #  pronóstico lluvia por debajo
         self.ids.sep.add_widget(
-            MetDat(tit=f"Precipitaciones a las [b]{self.hf} hs[/b]:", 
-                    dat=self.prob_ll, col="#76C7E8", x_pos1=0.35, x_pos2=0.7)
+            MetDat(tit=f"Precipitaciones a las [b]{self.hf} hs[/b]", 
+                    dat=self.prob_ll, col="#76C7E8", f_color="#000000", x_pos1=0.35, x_pos2=0.7)
         )
             
     def limp_tarj(self):
@@ -689,8 +677,7 @@ class MetDat(MDCard):
     col = StringProperty()
     x_pos1 = NumericProperty()
     x_pos2 = NumericProperty()
-
-    
+    f_color = StringProperty()
     def __init__(self, tit:str, dat:str, col:str, boton=False,
                  *args, **kwargs):
         '''
@@ -795,6 +782,7 @@ class MainApp(MDApp):
         print("\n\nEjecutando: consulta_api\n\n")
         try:
             self.meteo_data = self.con.descar_datos()
+            print(self.meteo_data)
         except:
             raise Exception("Error en consulta a API. \n\
 No se pueden actualizar los datos.")
