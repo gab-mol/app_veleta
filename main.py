@@ -26,7 +26,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from threading import Thread
 
-__version__ = "Beta.2"
+__version__ = "1.0"
 
 Builder.load_file("vista.kv")
 
