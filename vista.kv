@@ -138,6 +138,20 @@
                 id: rosa_v
                 padding: 20              
                 Image:
+                    canvas.before:
+                        Color:
+                            rgba: utils.get_color_from_hex(root.col_cir)
+                        RoundedRectangle:
+                            size: (self.height, self.height)
+                            pos: (self.center_x-self.center_x*.59, self.center_y-self.center_y*.73) 
+                            radius: [self.width, ]
+                        Color:
+                            rgba: 1,1,1,1
+                        RoundedRectangle:
+                            size: (self.height*.95, self.height*.95)
+                            pos: (self.center_x-self.center_x*.56, self.center_y-self.center_y*.69) 
+                            radius: [self.width, ]
+                            
                     pos_hint: {'center_x': 0.515,'center_y': 0.45}
                     source: './recursos/dial.png'
                     size: self.texture_size 
@@ -268,7 +282,7 @@
             font_size: 23
             halign: "center"
             theme_text_color: "Custom"
-            text_color: "black" #utils.get_color_from_hex(root.f_color)
+            text_color: "black"
 
 <PuntCardLab@MDLabel>
     font_size: 20

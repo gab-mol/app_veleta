@@ -1,6 +1,6 @@
 from kivy.config import Config
 ## Configuración de dimensiones de ventana
-# Config.set('graphics', 'resizable', '0') 
+Config.set('graphics', 'resizable', '0')
 Config.set('graphics', 'width', '600')
 Config.set('graphics', 'height', '800')
 from kivymd.app import MDApp
@@ -359,7 +359,7 @@ class ScMg(MDScreenManager):
     #    veleta 
     a_viento = NumericProperty()
     a_viento_s= StringProperty()
-    
+    col_cir = StringProperty()
     #   tarjetas
     prob_ll = StringProperty()
     hf = StringProperty()
@@ -466,6 +466,7 @@ hs. {self.t_pronost.iloc[self.contador_h]["time_d"]}'
         '''Mostrar en tarjetas datos del momento.'''
         # señalizar que son datos del momento
         self.actual= True
+        self.col_cir = "ff9800"
         
         # reinicia contador para 1 h al futuro al precionar
         self.contador_h = hora_futura(1,str=False)
@@ -476,7 +477,6 @@ hs. {self.t_pronost.iloc[self.contador_h]["time_d"]}'
         self.lluv= str(self.cond_ahora["rain"])+" mm"
         self.veloc= str(self.cond_ahora["wind_speed_10m"])+" km/h"
         direc = self.cond_ahora["wind_direction_10m"]
-        print("!!! VER DIRECCIÓN: ", direc)
         self.direc_s= "   "+MeteoDat.a_cardinales(direc)
         self.raf= str(self.cond_ahora["wind_gusts_10m"])+" km/h"
         
@@ -494,11 +494,10 @@ hs. {self.t_pronost.iloc[self.contador_h]["time_d"]}'
         Muestra en tarjetas y veleta de la GUI, los valores pronosticados
         para el índice que indique `ScMg.contador_h` (1 fila por cada una 
         de las 48 hs que se obtienen de API open-meteo).
-        
-        
         '''
         # señalizar que son predicciones
         self.actual= False
+        self.col_cir = "e9e9e9"
         
         # Mostrar en tarjetas pronóstico
         t = self.t_pronost
