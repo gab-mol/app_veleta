@@ -43,27 +43,6 @@ def hora_futura(fh:int, str=True):
     ts = datetime.now() + timedelta(hours=fh)
     return ts.strftime('%H') if str else int(ts.strftime('%H'))
 
-# def hs_restantes() -> int:
-#     '''Retorna número de horas 
-#     restantes en el día.'''
-#     ahora = int(datetime.now().strftime('%H'))
-#     hasta_24 = range(ahora,23)
-
-#     return len(hasta_24)
-
-def hora_loc(time, solo_h=False) -> str:
-    '''
-    Ajusta hora desde GMT-0 a GMT-3 y lo formatea como strting:
-    `%H:%M hs. del %d/%m/%y`.
-    ### Parámetros
-       - time: timestamp entregado en json desde API.'''
-    time = pd.to_datetime(time)
-    time = time - pd.Timedelta(hours=3) # GMT-0 a GMT-3
-    if solo_h:
-        t_str= "%H:%M hs."
-    else:
-        t_str = "%H:%M hs. del %d/%m/%y"
-    return time.strftime(t_str)  
 
 # Extracción de datos Meteorológicos ########################################
 class Config:
@@ -418,8 +397,8 @@ class ScMg(MDScreenManager):
             self.coord = f"Latitud: {lat}, Longitud: {lon}"       
             
             self.set_data()
-            self.tstamp = hora_loc(self.cond_ahora["time"], solo_h=True)
-            self.tstamp_f = hora_loc(self.cond_ahora["time"])
+            self.tstamp = self.app.hora_loc(self.cond_ahora["time"], solo_h=True)
+            self.tstamp_f = self.app.hora_loc(self.cond_ahora["time"])
             self.tiempo_ahora()
 
             # lanzar actualización
@@ -785,7 +764,26 @@ class MainApp(MDApp):
         except:
             raise Exception("Error en consulta a API. \n\
 No se pueden actualizar los datos.")
+            
+    def hora_loc(self, time, solo_h=False) -> str:
+        '''
+        Ajusta hora desde GMT+0, el número de horas guardado en el 
+        archivo de configuración y lo formatea como strting:
+        `%H:%M hs. del %d/%m/%y`.
+        ### Parámetros
+        - time: timestamp entregado en json desde API.
+        '''
+        time = pd.to_datetime(time)
         
+        # API: GMT-0. Leer corrección desde config.ini
+        h = int(self.conf.cfg["hora"]["zona_hor"])
+        time = time + pd.Timedelta(hours=h)
+        if solo_h:
+            t_str= "%H:%M hs."
+        else:
+            t_str = "%H:%M hs. del %d/%m/%y"
+        return time.strftime(t_str) 
+    
     def pantalla(self,pantalla):
         self.root.current = pantalla
         
