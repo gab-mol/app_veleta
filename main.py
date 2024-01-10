@@ -490,7 +490,13 @@ hs. {self.t_pronost.iloc[self.contador_h]["time_d"]}'
         self.a_viento = direc
             
     def pronost_tiempo(self):
+        '''
+        Muestra en tarjetas y veleta de la GUI, los valores pronosticados
+        para el índice que indique `ScMg.contador_h` (1 fila por cada una 
+        de las 48 hs que se obtienen de API open-meteo).
         
+        
+        '''
         # señalizar que son predicciones
         self.actual= False
         
@@ -502,16 +508,11 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
         self.hum= str(t.iloc[self.contador_h]["relative_humidity_2m"])+" %"
         self.lluv= str(t.iloc[self.contador_h]["rain"])+" mm"
         self.veloc= str(t.iloc[self.contador_h]["wind_speed_10m"])+" km/h"
-        direc = float(t.iloc[self.contador_h]["wind_direction_10m"])
-        
-        print("!!! VER DIRECCIÓN: ", direc)
-        
+        direc = float(t.iloc[self.contador_h]["wind_direction_10m"])        
         self.direc_s= "   "+MeteoDat.a_cardinales(direc)
         self.raf= str(t.iloc[self.contador_h]["wind_gusts_10m"])+" km/h"
         #  pronóstico lluvia
-        self.prob_ll = self.probab_ll(self.contador_h)
-        # self.prob_ll = str(t.iloc[self.contador_h]["precipitation_probability"])+" %"
-        
+        self.prob_ll = self.probab_ll(self.contador_h)        
         # actualizar tarjetas
         self.recarg_tj()
         
@@ -535,20 +536,17 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
         self.contador_h += 1
         if self.contador_h > hs_restantes:
             self.contador_h = ahora
-        # falta lógica: devolver hora en 24HS y el día correspondiente
-        # print(f"hora_futura({self.contador_h}):\n",
-        #     hora_futura(self.contador_h))
-        # # self.hf = hora_futura(self.contador_h)
         self.pronost_tiempo()
 
-    def probab_ll(self, indice) -> str:
+    def probab_ll(self, indice:int) -> str:
         '''
-        Obtener probabilidad de lluvia para cualquiera de 
-        las horas de día.
+        Obtener probabilidad de lluvia para cualquiera de las 48 filas 
+        correspondientes a las 48 hs de predicciones obtendidas de 
+        API open-meteo.
         ### Parámetro
-            - h: hora deseada (formato 24hs).
+            - indice: índice de fila (se usa en `pandas.Dataframe.iloc`)
         ### Return
-            - `str`+" %" valor de probabilidad de lluvia.
+            - `str`+" %"  (valor de probabilidad de lluvia).
         '''
         t = self.t_pronost
         prob_ll = str(t.iloc[indice]["precipitation_probability"])
@@ -557,7 +555,9 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
     
     #  Métodos de gestión tarjetas
     def recarg_tj(self):
-        '''Actualizar tarjetas de condiciones meteorológicas.'''
+        '''
+        Declara las tarjetas de condiciones meteorológicas.
+        '''
         ## Recargar datos de tarjetas
         self.limp_tarj()
         
@@ -571,11 +571,12 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
             (.56, .91, .77, 1)
         ]
         c_solidohex = [
-            "#FA3D01", 
+            "#FA3D01",
+            "#87F0B1",
             "#49FEDE", 
             "#69A7C0", 
             "#19E269", 
-            "#87F0B1",  
+            "#49FEDE", 
             "#87F09A"
         ]
         c_tema = ['#ff9800' for i in range(6)]
@@ -588,26 +589,25 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
         # Declaración de tarjetas en bucle
         for tit, dat, col, tex in zip(
             ["Temperatura ",
-            "Humedad rel.",
+            "Viento desde ",             
             "Lluvia",
             "Velocidad \ndel viento ",
-            "Viento desde ",
+            "Humedad rel.",            
             "Vel. ráfagas"], 
-            [self.temp, 
-             self.hum, 
+            [self.temp,
+             self.direc_s,             
              self.lluv, 
-             self.veloc, 
-             self.direc_s,
+             self.veloc,
+             self.hum,
              self.raf],
             col_tarj,
             c_solidohex):
-            print(tit,dat,col,tex)
             self.ids.tabla.add_widget(MetDat(tit=f"[b]{tit}[/b]", dat=dat, 
                 col=col, line_color=tex, f_color=tex, x_pos1=0.25, x_pos2=0.72))
         #  pronóstico lluvia por debajo
         self.ids.sep.add_widget(
-            MetDat(tit=f"Precipitaciones a las [b]{self.hf} hs[/b]", 
-                    dat=self.prob_ll, col="#76C7E8", f_color="#000000", x_pos1=0.35, x_pos2=0.7)
+            MetDat(tit=f"Precipitaciones a las [b]{self.hf}[/b]", 
+                    dat=self.prob_ll, col="#76C7E8", f_color="#000000", x_pos1=0.35, x_pos2=0.8)
         )
             
     def limp_tarj(self):
