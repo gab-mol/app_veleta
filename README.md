@@ -4,7 +4,7 @@
 > Aplicación minimalista para visualizar la dirección y velocidad del viento actual, T°, y predicciones para precipitaciones en horas siguientes.  
 > (Practicar uso de KivyMD y extracción de datos de API)
 
-## Desarrollo | Actualmente: _pre-1.0_
+## Desarrollo | Actualmente: _1.0_
 
 ### Historia
 - Fecha de inicio de desarrollo: 6/12/2023
