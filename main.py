@@ -5,14 +5,13 @@ Config.set('graphics', 'width', '600')
 Config.set('graphics', 'height', '800')
 from kivymd.app import MDApp
 from kivymd.uix.screenmanager import MDScreenManager
-from kivymd.uix.screen import Screen
-from kivymd.uix.boxlayout import MDBoxLayout
+from kivy.uix.screenmanager import SlideTransition
 from kivymd.uix.gridlayout import MDGridLayout
 from kivy.properties import StringProperty, BooleanProperty, NumericProperty
 from kivy.properties import DictProperty, ListProperty
 from kivymd.uix.card import MDCard
 from kivymd.uix.list import OneLineListItem
-from kivymd.uix.button import MDIconButton, MDFlatButton
+from kivymd.uix.button import MDFlatButton
 from kivymd.uix.scrollview import MDScrollView
 from kivy.lang import Builder
 from kivy.clock import Clock
@@ -745,16 +744,22 @@ No se pueden actualizar los datos.")
             t_str = "%H:%M hs. del %d/%m/%y"
         return time.strftime(t_str) 
     
-    def pantalla(self,pantalla):
-        self.root.current = pantalla
+    def eleg_local(self):
+        '''Volver a pantalla de elección de localidad
+        (si el usuario decide elegir otra localidad)'''
+        self.root.transition = SlideTransition(direction='right')
+        self.root.current = "eleg_loc"
         
     def volver_main(self):
-        '''Retornar a pantalla principal.'''
+        '''
+        Retornar a pantalla principal desde elección de localidad.
+        Solo funciona si se seleccionó una localidad previamente
+        '''
         if self.con_loc:
-            
-            self.pantalla("main")
+            self.root.transition = SlideTransition(direction='left')
+            self.root.current = "main"
         print(self.root.ciud_eleg_id)
-
+    
     # Lanzar info emergente
     def vent_info(self):
         '''Lanzar información sobre App.'''

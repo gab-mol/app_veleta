@@ -13,7 +13,7 @@
                     width: 5
             MDTopAppBar:
                 title: "Búsqueda de localidades"
-                right_action_items: [["weather-windy",lambda x: app.volver_main()]]
+                right_action_items: [["weather-partly-cloudy",lambda x: app.volver_main()]]
             MDBoxLayout:
                 orientation: 'vertical'
                 spacing: 10
@@ -58,7 +58,7 @@
             size_hint: 1, .07
             right_action_items:
                 [
-                ["home-city-outline",lambda x: app.pantalla("eleg_loc")],
+                ["home-city-outline",lambda x: app.eleg_local()],
                 ["information-variant",lambda x: app.vent_info()]
                 ]
         MDBoxLayout:
