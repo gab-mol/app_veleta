@@ -18,6 +18,8 @@ from kivy.lang import Builder
 from kivy.clock import Clock
 import asynckivy as ak
 from kivymd.uix.dialog import MDDialog
+from kivymd.uix.snackbar import Snackbar
+
 
 import os
 import configparser as confp
@@ -350,7 +352,7 @@ class ScMg(MDScreenManager):
             pais = self.app.conf.cfg["configvars"]["pais"]
             
             self.localid = f'{nom}, {pais}'
-            self.coord = f"Latitud: {lat}, Longitud: {lon}"       
+            self.coord = f"[b]Latitud:[/b] {lat} - [b]Longitud:[/b] {lon}"       
             
             self.set_data()
             self.tstamp = self.app.hora_loc(self.cond_ahora["time"], solo_h=True)
@@ -609,6 +611,19 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
             self.cargar_barra()
             self.app.volver_main()
 
+    def ver_coord(self):
+        '''
+        Barra inferior emergente para recordar al usuario las coordenadas 
+        y hora de descarga
+        '''
+        Snackbar(
+            duration=6,
+            text=f"[color=#000000]| {self.coord} |      \
+                                [size=15][i]{self.tstamp_f}[/i][/color][/size]",
+            font_size=16,
+            bg_color=(1,.6,0)
+        ).open()
+
 
 class MetDat(MDCard):
     '''
@@ -764,7 +779,10 @@ Versión: {self.conf.cfg["info"]["version"]} \n\n\
     def cerr_info(self, inst):
         '''Orden para cerrar info app. emergente.'''
         if self.dialog:
-            self.dialog.dismiss(force=True) 
+            self.dialog.dismiss(force=True)
+            
+
+    
 if __name__ == "__main__":
 
     MainApp().run()

@@ -52,29 +52,21 @@
         MDTopAppBar:
             id: topb
             elevation: 1
-            title: "[size=20]Condiciones en "+root.localid+"[/size]"
+            title: "[size=20]Condiciones en "+root.localid+"[/size]\n"
             markup: True
             pos_hint: {'top': 1}
             size_hint: 1, .07
-            right_action_items: 
+            right_action_items:
                 [
-                ["information-outline",lambda x: banner.show()],
-                ["home-city-outline",lambda x: app.pantalla("eleg_loc")]
+                ["home-city-outline",lambda x: app.pantalla("eleg_loc")],
+                ["information-variant",lambda x: app.vent_info()]
                 ]
-        MDBanner:
-            id: banner
-            type: "two-line"
-            text: ["Datos descargados a las: "+root.tstamp_f, "Coordenadas: "+root.coord]
-            over_widget: meteo
-            vertical_pad: topb.height
-            right_action: ["Sobre App.", lambda x: app.vent_info()]
         MDBoxLayout:
             id: meteo
             orientation: 'vertical'
             padding: [20, 5, 20, 20]
             spacing: 5
-            size_hint_y: None # importante
-            height: Window.height - topb.height
+            size_hint: 1, .93
             MDBoxLayout:
                 size_hint_y: .05
                 spacing: 5
@@ -136,25 +128,31 @@
             MDFloatLayout:
                 size_hint: 1, .6
                 id: rosa_v
-                padding: 20              
+                padding: 20
                 Image:
                     canvas.before:
                         Color:
                             rgba: utils.get_color_from_hex(root.col_cir)
                         RoundedRectangle:
                             size: (self.height, self.height)
-                            pos: (self.center_x-self.center_x*.59, self.center_y-self.center_y*.73) 
+                            pos: (self.center_x-self.center_x*.59, self.center_y-self.center_y*.73)
                             radius: [self.width, ]
                         Color:
                             rgba: 1,1,1,1
                         RoundedRectangle:
                             size: (self.height*.95, self.height*.95)
-                            pos: (self.center_x-self.center_x*.56, self.center_y-self.center_y*.69) 
+                            pos: (self.center_x-self.center_x*.56, self.center_y-self.center_y*.69)
                             radius: [self.width, ]
-                            
+
                     pos_hint: {'center_x': 0.515,'center_y': 0.45}
                     source: './recursos/dial.png'
-                    size: self.texture_size 
+                    size: self.texture_size
+                MDIconButton:
+                    icon: "google-maps"
+                    icon_size: 30
+                    icon_color: "black"
+                    pos_hint: {'x':-.01,'center_y': -0.18}
+                    on_press: root.ver_coord()
                 PuntCardLab:
                     pos_hint: {'center_x': 1,'center_y': 1.02}
                     font_size: 25
@@ -167,7 +165,7 @@
                     text: "NE"
                 PuntCardLab:
                     pos_hint: {'center_x': 1.34,'center_y': .67}
-                    text: "ENE"      
+                    text: "ENE"
                 PuntCardLab:
                     pos_hint: {'center_x': 1,'center_y': -0.11}
                     font_size: 25
@@ -209,7 +207,7 @@
                     text: "SSO"
                 MDLabel:
                     pos_hint: {'center_x': 0.515,'center_y': 0.45}
-                    size: self.texture_size 
+                    size: self.texture_size
                     canvas.before:
                         PushMatrix
                         Rotate:
@@ -219,7 +217,7 @@
                             origin: self.center
                     canvas:
                         Color:
-                            rgba:  1,.1,0,1    
+                            rgba:  1,.1,0,1
                         Triangle:
                             points: self.center_x - self.center_x*.47, self.center_y,    self.center_x + self.center_x*.39, self.center_y+self.center_y*.08,    self.center_x +self.center_x*.39, self.center_y-self.center_y*.08
                         Triangle:
@@ -228,9 +226,9 @@
                     canvas.after:
                         PopMatrix
             MDBoxLayout:
-                size_hint: 1, .1 
+                size_hint: 1, .1
                 MDLabel:
-                    pos_hint: {'right': 1.0,'top': 0.12}
+                    pos_hint: {'right': 1.0,'top': 0.3}
                     font_size: 15
                     text: "V.: "+root.vrs
                     halign:"right"
@@ -294,5 +292,5 @@
     bg_color: 1,1,1,.1
     theme_text_color: "Custom"
     text_color: utils.get_color_from_hex('#ff9800')
-    on_release: 
+    on_release:
         root.click()
