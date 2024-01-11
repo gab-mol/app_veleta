@@ -12,6 +12,7 @@
 - Fecha lanz. Beta.1 6/1/2024
 - Fecha lanz. Beta.2 8/1/2024
 - Fecha lanz. pre-1.0 10/1/2024
+- Fecha lanz. 1.0 11/1/2024
 
 ## Información general
 ### Datos (endpoints gratuitos de **open-meteo.com**)
