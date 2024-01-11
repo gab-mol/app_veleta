@@ -26,8 +26,6 @@ import pandas as pd
 from datetime import datetime, timedelta
 from threading import Thread
 
-__version__ = "1.0"
-
 Builder.load_file("vista.kv")
 
 
@@ -208,7 +206,6 @@ class MeteoDat:
         df = pd.DataFrame(json)
         df['time_h'] = pd.to_datetime(df['time']).dt.strftime('%H')
         df['time_d'] = pd.to_datetime(df['time']).dt.strftime('%d/%m')
-        # df.to_csv("/home/gabrielmolina/Escritorio/Proyectos/app_veleta_env/ver.csv")
         return df
 
 class GeoCod:
@@ -297,13 +294,13 @@ class ScMg(MDScreenManager):
     a_viento = NumericProperty()
     a_viento_s= StringProperty()
     col_cir = StringProperty()
+    
     #   tarjetas
     prob_ll = StringProperty()
     hf = StringProperty()
-    
     tstamp = StringProperty()
     tstamp_f = StringProperty()
-    temp= StringProperty()
+    temp = StringProperty()
     hum = StringProperty()
     lluv = StringProperty() 
     veloc = StringProperty()
@@ -312,7 +309,7 @@ class ScMg(MDScreenManager):
     
     actual = BooleanProperty(True)
     
-    # Screen: eleg_loc
+    # Screen: eleg_loc (elección de ciudad)
     ciud_input = StringProperty()
     lista_res = ListProperty()
     dicc_res = DictProperty()
@@ -366,7 +363,6 @@ class ScMg(MDScreenManager):
 
     def reiniciar_hf(self):
         '''Hora/día 1 h al futuro'''
-        print("se ejecuta reiniciar_hf()")
         self.hf =f'{self.t_pronost.iloc[self.contador_h]["time_h"]} \
 hs. {self.t_pronost.iloc[self.contador_h]["time_d"]}'
 
@@ -467,7 +463,6 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
         # Pronóstico: Se pueden mostrar hasta 24 hs a futuro
         ahora = hora_futura(0,str=False)
         hs_restantes = ahora+24
-        # hs_restantes = len(range(ahora, mas24h))
         
         print("ahora:",ahora)
         print("mas24h:",hs_restantes)
@@ -491,7 +486,7 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
         
         return f"{prob_ll} %"
     
-    #  Métodos de gestión tarjetas
+    #  Métodos de gestión tarjetas #### #### #### 
     def recarg_tj(self):
         '''
         Declara las tarjetas de condiciones meteorológicas.
@@ -500,14 +495,6 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
         self.limp_tarj()
         
         # Señalizar actual o predicción
-        c_solido = [
-            (.91, .56, .56, 1), 
-            (.56, .70, .91, 1), 
-            (.56, .91, .90, 1), 
-            (.60, .91, .46, 1), 
-            (.70, .91, .46, 1),  
-            (.56, .91, .77, 1)
-        ]
         c_solidohex = [
             "#FA3D01",
             "#87F0B1",
@@ -542,6 +529,7 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
             c_solidohex):
             self.ids.tabla.add_widget(MetDat(tit=f"[b]{tit}[/b]", dat=dat, 
                 col=col, line_color=tex, f_color=tex, x_pos1=0.25, x_pos2=0.72))
+            
         #  pronóstico lluvia por debajo
         self.ids.sep.add_widget(
             MetDat(tit=f"Precipitaciones a las [b]{self.hf}[/b]", 
@@ -553,7 +541,7 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
         self.ids.tabla.clear_widgets()
         self.ids.sep.clear_widgets()
 
-    # Métodos Screen: eleg_loc              ######
+    # Métodos Screen: eleg_loc     #### #### #### 
     def lista_ciud(self, lista_res):
         '''
         Cargar lista de ciudades en GUI.
@@ -623,22 +611,23 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
 
 
 class MetDat(MDCard):
-    '''Tarjeta de datos meteorológicos. Pensada para usarse en bucle.'''
+    '''
+    Tarjeta de datos meteorológicos. Pensada para declarase en bucle.
+    '''
     tit = StringProperty()
     dat = StringProperty()
     col = StringProperty()
     x_pos1 = NumericProperty()
     x_pos2 = NumericProperty()
     f_color = StringProperty()
-    def __init__(self, tit:str, dat:str, col:str, boton=False,
+    
+    def __init__(self, tit:str, dat:str, col:str,
                  *args, **kwargs):
         '''
         ### Parámetros
             - tit: Variable meteorológica a informar.
             - dat: Valor de la variable meteorológica.
             - col: Color de la tarjeta. (Hexadecimal)
-            - boton: (defoult: `False`) activa el botón-ícono para cambiar \
-                el número de horas futuras de la predicción.
         '''        
         super().__init__(*args, **kwargs)
 
@@ -646,26 +635,7 @@ class MetDat(MDCard):
         self.tit = tit
         self.dat = dat
         self.md_bg_color = col
-        
-        # Botón para pronóstico de lluvia
-        if boton:
-            self.add_widget(
-                MDIconButton(
-                    size_hint= (None,None,),
-                    pos_hint= {'top': 1, 'right':0},
-                    icon= "clock",
-                    on_press=self.precip_prob,
-                    text=f"[b]+ {self.app.h_ll} h[/b]"
-                )
-            )
-    
-    def precip_prob(self, *args):
-        '''Método invocado por el botón para sumar 
-        horas al pronósitico de lluvia.'''
-        self.app.h_ll += 1
-        print(self.app.h_ll)
-        self.app.root.probab_ll(recargar=True)
-        
+
         
 class DatTab(MDGridLayout):pass
 
