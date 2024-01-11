@@ -161,8 +161,8 @@ class MeteoDat:
     @staticmethod
     def a_cardinales(grados:int):
         
-        '''Transforma dirección del viento en grados (°) a 
-        puntos cardinales (Eng).
+        '''Transforma dirección del viento (°) a 
+        puntos cardinales.
         
         Parametros
             grados: valor en grados a transformar.'''
@@ -199,48 +199,6 @@ class MeteoDat:
             return "NO"
         elif grados > 330 and grados <= 355:
             return "NNO"
-
-    @staticmethod
-    def prob_prec(predicc:pd.DataFrame, h_prec:int) -> list:
-        '''
-        Obtiene la fila del Datafreme de condiciones predichas por horas,
-        la correspondiente a la cantidad indicada de horas a futuro.
-
-        ### Parámetros
-            predicc: elemento 'hourly' de la respuesta de API, \
-convertido a pandas.Dataframe.
-            h_prec: número de horas futuras sumadas a la actual.
-
-        ### Return
-            - `list`
-                - [0] `pandas.Dataframe` Valor de probablilidad de precipitaciones para las horad futura
-                del mismo día.
-                - [1] `str` con hora actual de referencia (hs)
-                - [2] `int` n° horas futuras hoy
-        '''
-
-        # Hora futura deseada
-        ts_h = hora_futura(0)
-        # convertir columna a timestamp, y luego a str solo con la hora
-        predicc['time'] = pd.to_datetime(predicc['time']).dt.strftime('%H')
-       
-        h_futuras_hoy = [hs for hs in list(predicc['time']) if hs > ts_h]
-        print("\nHoras restantes: ",h_futuras_hoy)
-        
-        fila_predicc = predicc.loc[predicc['time'] >= ts_h]
-        print(fila_predicc)
-        
-        # Retornar valor
-        return [fila_predicc[["time","precipitation_probability"]], ts_h, len(h_futuras_hoy)]
-    
-    @staticmethod
-    def _tabla_pronost(json:dict)-> pd.DataFrame:
-        '''Recibe diccionario (json clave "Hourly" en respuesta de API)
-        lo pasa a pandas.DataFrame y transforam columna "time" de timestamp a
-        str con horas en formato 24 hs.'''
-        df = pd.DataFrame(json)
-        df['time'] = pd.to_datetime(df['time']).dt.strftime('%H')
-        return df
 
     @staticmethod
     def tabla_pronost(json:dict)-> pd.DataFrame:
@@ -374,6 +332,7 @@ class ScMg(MDScreenManager):
                 self.endp = self.conf.meteo_url()
                 self.root.current = "conex_err"
             else:
+                print("ejecución else en init")
                 self.app.consulta_api()
                 Thread(target=Clock.schedule_interval(self.app.consulta_api,900),
                     daemon=True).start()
@@ -407,6 +366,7 @@ class ScMg(MDScreenManager):
 
     def reiniciar_hf(self):
         '''Hora/día 1 h al futuro'''
+        print("se ejecuta reiniciar_hf()")
         self.hf =f'{self.t_pronost.iloc[self.contador_h]["time_h"]} \
 hs. {self.t_pronost.iloc[self.contador_h]["time_d"]}'
 
@@ -592,24 +552,35 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
         '''Limpiar tarjetas.'''
         self.ids.tabla.clear_widgets()
         self.ids.sep.clear_widgets()
-    
 
     # Métodos Screen: eleg_loc              ######
     def lista_ciud(self, lista_res):
-        '''Cargar lista de ciudades en GUI.
+        '''
+        Cargar lista de ciudades en GUI.
         
         Parámetros
             lista_res: lista a insertar en `MDlist`.
         '''
         
         self.ids.list_ciud.clear_widgets()
-        for c in lista_res:
+        print("dentro",lista_res[0])
+        if lista_res[0][0]=='E':
+            print("entró en error")
             self.ids.list_ciud.add_widget(
-                CiudItem(id=str(c[0]), 
-                    text=f"{c[1][0]}, {c[1][1]} ({c[1][2]}, {c[1][3]})",
+                CiudItem(id=str(lista_res[0][0]), 
+                    text=f"{lista_res[0][1]}",
                 app=self.app
                 )
             )
+        else:
+            for c in lista_res:
+                print(c)
+                self.ids.list_ciud.add_widget(
+                    CiudItem(id=str(c[0]), 
+                        text=f"{c[1][0]}, {c[1][1]} ({c[1][2]}, {c[1][3]})",
+                    app=self.app
+                    )
+                )
 
     def buscar_ciud(self):
         '''
@@ -620,11 +591,12 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
             widget `MDlist`'''
             self.dicc_res = await self.app.localid.consulta_api(self.ciud_input)            
             self.lista_res = self.app.localid.listar_res(self.dicc_res)
+            print("self.lista_res:", self.lista_res)
             self.lista_ciud(self.lista_res)
         ak.start(cons())
 
     def confirmar_ciud(self):
-        if self.ciud_eleg_id == "E":
+        if self.ciud_eleg_id == 'E':
             print("Usuario hizo click en mensaje de error")
         else:
             loc_eleg = self.dicc_res["results"][int(self.ciud_eleg_id)]
@@ -646,6 +618,8 @@ hs. {t.iloc[self.contador_h]["time_d"]}'
             
             print("ejecutando self.app.consulta_api")
             self.app.consulta_api()
+            self.cargar_barra()
+            self.app.volver_main()
 
 
 class MetDat(MDCard):
@@ -711,6 +685,7 @@ class CiudItem(OneLineListItem):
         
     def click(self):
         self.app.root.ciud_eleg_id = self.id
+        self.app.root.confirmar_ciud()
         
 class MainApp(MDApp):
     title= "Veleta"
@@ -772,6 +747,7 @@ No se pueden actualizar los datos.")
         `%H:%M hs. del %d/%m/%y`.
         ### Parámetros
         - time: timestamp entregado en json desde API.
+        - solo_h: `True` = hora y fecha | `False` = solo hora.
         '''
         time = pd.to_datetime(time)
         
@@ -788,11 +764,11 @@ No se pueden actualizar los datos.")
         self.root.current = pantalla
         
     def volver_main(self):
+        '''Retornar a pantalla principal.'''
         if self.con_loc:
             
             self.pantalla("main")
         print(self.root.ciud_eleg_id)
-    
 
     # Lanzar info emergente
     def vent_info(self):

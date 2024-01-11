@@ -95,9 +95,15 @@
                     size_hint: 1, 1
                     md_bg_color: (0,0,0,0)
                     line_color: '#ff9800'
-                    MDRoundFlatIconButton:
-                        pos_hint: {'center_x': 0.5,'center_y': 0.5}
-                        size_hint_x: .29
+                    canvas:
+                        Color:
+                            rgb: 1,.6,0
+                        Line:
+                            points: self.center_x-5, self.center_y+10, self.center_x-5, self.center_y-10
+                            width: 1
+                    MDRectangleFlatIconButton:
+                        pos_hint: {'center_y': 0.5}
+                        size_hint_x: self.size_hint_x
                         text: "Pronóstico"
                         markup: True
                         font_size: 15
@@ -106,15 +112,9 @@
                         text_color: "black"
                         line_color: (0, 0, 0, 0)
                         on_press: root.pronost_tiempo()
-                    MDLabel:
-                        size_hint_x: .01
-                        pos_hint: {'center_x': 0.5,'center_y': 0.5}
-                        text: "|"
-                        font_size: 15
-                        text_color: "black"
-                    MDRoundFlatIconButton:
-                        pos_hint: {'center_x': 0.6,'center_y': 0.5}
-                        size_hint_x: .70
+                    MDRectangleFlatIconButton:
+                        pos_hint: {'center_y': 0.5}
+                        size_hint_x: self.size_hint_x
                         text: root.hf
                         halign: "left"
                         markup: True
@@ -295,7 +295,4 @@
     text_color: utils.get_color_from_hex('#ff9800')
     on_release: 
         root.click()
-        app.root.confirmar_ciud()
-        app.root.cargar_barra()
-        #app.root.cargar_dat_act()
-        app.root.current = "main"
+        # app.root.confirmar_ciud()
